@@ -1,0 +1,34 @@
+@use '../styles/theme';
+
+.select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.select-label {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.select-input {
+  width: 200px;
+  height: 40px;
+  padding: 0 14px;
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--input-text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M12.5%206L8%2010.5L3.5%206%22%20stroke%3D%22%23606060%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E');
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+
+  &:focus {
+    border-color: var(--input-focus-border);
+    outline: none;
+    background-color: var(--input-focus-background);
+  }
+} 

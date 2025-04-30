@@ -1,0 +1,50 @@
+@use '../styles/theme';
+
+.icon-button {
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  padding: 0.5rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  color: var(--header-icon);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 0;
+
+  .icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: block;
+  }
+
+  &:hover {
+    color: var(--header-icon-hover);
+    background-color: var(--header-icon-hover-bg);
+  }
+
+  &--active {
+    color: var(--header-icon-hover);
+    background-color: var(--header-icon-hover-bg);
+    box-shadow: inset 0 0 0 1px var(--header-icon-hover);
+    
+    &:hover {
+      background-color: var(--header-icon-hover-bg);
+      opacity: 0.9;
+    }
+  }
+  
+  &--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    
+    &:hover {
+      color: var(--header-icon);
+      background-color: transparent;
+    }
+  }
+} 

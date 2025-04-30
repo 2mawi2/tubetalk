@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: AI YouTube Assistant - Pakai API Key Sendiri",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Nikmati YouTube lebih pintar dengan AI: tanya jawab langsung, rangkuman cepat, dan bebas gunakan API key pribadi Anda.",
+    "description": "The description of the extension"
+  }
+} 

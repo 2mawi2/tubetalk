@@ -1,0 +1,78 @@
+TubeTalk adalah ekstensi Chrome terbaik yang menggabungkan fitur chat AI interaktif dengan ringkasan video instan. Kamu bisa mengontrol sepenuhnya lewat API key OpenAI atau OpenRouter milikmu sendiri. Ubah pengalaman nonton YouTube-mu dari yang tadinya pasif jadi pembelajaran aktif dengan bantuan AI.
+
+Keunggulan Utama:
+
+💬 Chat & Ringkasan Video dengan AI: Tanya apa aja tentang video YouTube dan dapatkan ringkasan instan dari AI. Terima jawaban lengkap dengan timestamp untuk mendalami topik yang kamu minati. Seperti punya tutor pribadi untuk setiap video!
+
+🔑 API Milikmu, Kontrolmu: Beda dari ekstensi lain, TubeTalk memungkinkan kamu pakai API key OpenAI atau OpenRouter milikmu sendiri. Ini berarti privasi lebih terjaga, lebih aman, dan kamu punya kendali penuh atas penggunaan API tanpa bergantung layanan pihak ketiga.
+
+🧠 Pembelajaran Interaktif: Ubah kebiasaan nonton video pasif jadi aktif. Cocok buat pelajar, peneliti, profesional, atau siapa aja yang pengen dapetin insight berharga dari video YouTube dengan cepat.
+
+Fitur Unggulan:
+
+• Chat YouTube dengan AI: Berinteraksi dengan video lewat tanya jawab dan terima jawaban AI lengkap dengan timestamp, langsung di YouTube.
+• Peringkas Video Instan: Dapatkan ringkasan AI yang akurat dan cepat dari video YouTube tanpa perlu nonton full.
+• Dukungan API Key Pribadi: Pakai API key OpenAI atau OpenRouter milikmu untuk interaksi AI yang personal dan privasi terjaga.
+• Navigasi Pintar: Klik timestamp di jawaban AI untuk langsung loncat ke bagian video yang dimaksud.
+• Mendukung Banyak Bahasa: Bisa dipakai dengan caption YouTube dalam berbagai bahasa.
+• Akses Cepat: Aktifkan TubeTalk langsung dengan shortcut keyboard Alt+Y.
+• Mode Gelap & Kustomisasi: Sesuaikan tampilan ekstensi, termasuk mode gelap, sesuai selera.
+
+Cocok Untuk:
+
+• Pelajar yang menganalisis materi kuliah dan konten edukasi.
+• Peneliti yang menjelajahi materi video.
+• Profesional yang ingin update dengan konten industri.
+• Pembelajar seumur hidup yang ingin belajar efisien dari YouTube.
+
+Cara Mulai:
+
+1. Install TubeTalk: Tambahkan ekstensi TubeTalk ke browser Chrome-mu dari Chrome Web Store.
+2. Masukkan API Key: Buka pengaturan ekstensi dan masukkan API key OpenAI atau OpenRouter-mu.
+3. Buka Video YouTube: Buka video YouTube yang punya caption.
+4. Aktifkan TubeTalk: Tekan Alt+Y untuk mulai berinteraksi dengan video pakai chat AI dan ringkasan.
+
+Fokus pada Privasi:
+
+Ketika pakai API key sendiri, semua proses AI terjadi lewat koneksi langsung dengan OpenAI atau OpenRouter. Data kamu aman, dan kamu punya kendali penuh atas penggunaan API.
+
+Catatan:
+
+- Perlu Caption YouTube: TubeTalk butuh caption video YouTube untuk bisa berfungsi dengan baik.
+
+Pertanyaan yang Sering Diajukan (FAQ)
+----------------------------------------
+
+PERTANYAAN: Apa yang bikin TubeTalk beda dari ekstensi peringkas YouTube lainnya?
+JAWABAN: TubeTalk nggak cuma kasih ringkasan video instan, tapi juga punya fitur chat AI interaktif dalam video YouTube. Plus, kamu bisa pakai API key OpenAI atau OpenRouter sendiri, yang bikin data dan privasi kamu terjamin.
+
+PERTANYAAN: Gimana cara dapetin API key OpenAI atau OpenRouter?
+JAWABAN: Kamu bisa daftar untuk dapetin API key di website OpenAI (https://openai.com/) atau website OpenRouter (https://openrouter.ai/). Setelah dapat API key, tinggal masukin ke pengaturan TubeTalk.
+
+PERTANYAAN: Apa TubeTalk bisa dipake di semua video YouTube?
+JAWABAN: TubeTalk bisa dipake di video YouTube yang punya caption. AI-nya pake caption ini buat bikin ringkasan dan jawaban yang akurat.
+
+PERTANYAAN: Apa TubeTalk gratis?
+JAWABAN: Ya, install dan pake TubeTalk gratis. Tapi, pemakaian API key OpenAI atau OpenRouter mungkin ada biayanya tergantung paket yang kamu pilih di layanan tersebut.
+
+PERTANYAAN: Apa TubeTalk support banyak bahasa?
+JAWABAN: Tentu! TubeTalk bisa dipake dengan caption YouTube dalam berbagai bahasa, jadi kamu bisa interaksi dengan video dalam bahasa yang kamu suka.
+
+PERTANYAAN: Seberapa aman API key-ku di TubeTalk?
+JAWABAN: API key kamu disimpan lokal di browser dan nggak pernah dikirim ke server kami. Semua interaksi langsung antara browser kamu dan OpenAI atau OpenRouter.
+
+PERTANYAAN: Bisa nggak kustomisasi model AI yang dipake TubeTalk?
+JAWABAN: Bisa, karena kamu pake API key sendiri, kamu bisa atur model OpenAI mana yang mau dipake sesuai akses API-mu.
+
+PERTANYAAN: Gimana kalo videonya nggak ada caption?
+JAWABAN: TubeTalk butuh caption buat bisa jalan dengan baik. Kalo video nggak punya caption, AI-nya nggak bisa memproses kontennya.
+
+PERTANYAAN: Gimana cara update atau ganti API key?
+JAWABAN: Buka pengaturan TubeTalk dengan klik ikon ekstensi di toolbar browser. Di situ kamu bisa update atau ganti API key kapan aja.
+
+PERTANYAAN: Butuh bantuan atau mau kasih feedback?
+JAWABAN: Untuk dukungan atau feedback, silakan buka Issue di repositori GitHub kami: https://github.com/2mawi2/tubetalk/issues
+
+----------------------------------------
+
+Tingkatkan pengalaman YouTube-mu dengan chat interaktif dan ringkasan video instan dari AI TubeTalk. Ubah setiap video jadi sesi belajar yang menarik dan personal. Install TubeTalk sekarang dan jelajahi YouTube dengan cara yang baru!

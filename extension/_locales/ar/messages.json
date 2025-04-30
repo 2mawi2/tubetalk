@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+      "message": "TubeTalk: مساعد الذكاء الاصطناعي لليوتيوب - استخدم مفتاح API الخاص بك",
+      "description": "The name of the extension"
+  },
+  "extensionDescription": {
+      "message": "لخص فيديوهات يوتيوب وتحدث معها بالذكاء الاصطناعي: اطرح أسئلة، احصل على ملخصات فورية، واستخدم مفتاح API الخاص بك للخصوصية.",
+      "description": "The description of the extension"
+  }
+}

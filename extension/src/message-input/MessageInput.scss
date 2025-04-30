@@ -1,0 +1,203 @@
+.input-container {
+  padding: var(--spacing-4);
+  background: transparent;
+  border-top: 1px solid var(--border-color);
+}
+
+.input-wrapper {
+  width: 100%;
+  background: var(--background-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  min-height: 80px;
+  max-height: 300px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &.has-image {
+    min-height: 200px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    height: auto;
+    padding: 14px 16px;
+    padding-right: 48px;
+    padding-bottom: 50px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    resize: none;
+    line-height: 1.5;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--text-primary);
+    overflow-y: auto;
+    outline: none;
+    box-sizing: border-box;
+    flex-grow: 1;
+    position: relative;
+    bottom: 0;
+
+    &::placeholder {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+}
+
+.button-row {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--background-primary) 20%,
+    var(--background-primary) 100%
+  );
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 2;
+}
+
+.left-buttons, .right-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.model-select {
+  height: 32px;
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 160px;
+  margin-right: var(--spacing-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+
+  &:hover {
+    background-color: var(--background-secondary);
+  }
+
+  &:focus {
+    border-color: var(--button-primary-background);
+    outline: none;
+  }
+
+  option {
+    font-size: 14px;
+    padding: var(--spacing-2);
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+}
+
+#yt-sidebar-imageButton,
+#yt-sidebar-sendMessage,
+#yt-sidebar-timestampButton {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background-color: var(--header-icon-hover-bg);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+}
+
+#yt-sidebar-timestampButton.selected {
+  background-color: var(--button-primary-background);
+
+  .timestamp-icon {
+    fill: var(--button-primary-text);
+  }
+}
+
+.image-icon,
+.send-icon,
+.timestamp-icon {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-primary);
+  transition: fill 0.2s ease;
+}
+
+.captured-frame {
+  display: none;
+  width: 200px;
+  height: 112px;
+  position: relative;
+  margin: var(--spacing-4);
+  margin-bottom: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--background-tertiary);
+  float: left;
+
+  &.visible {
+    display: block;
+  }
+
+  img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .remove-frame {
+    position: absolute;
+    top: var(--spacing-1);
+    right: var(--spacing-1);
+    width: 20px;
+    height: 20px;
+    background: var(--tooltip-background);
+    border: none;
+    border-radius: 50%;
+    color: var(--tooltip-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    font-size: var(--text-sm);
+  }
+} 

@@ -1,0 +1,57 @@
+:root {
+  /* Colors */
+  --color-primary: #3b82f6;
+  --color-secondary: #6b7280;
+  --color-background: #ffffff;
+  --color-text: #1f2937;
+  --color-border: #e5e7eb;
+  
+  /* Spacing */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  
+  /* Font sizes */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+}
+
+/* Add base styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* Add utility classes */
+.container {
+  padding: var(--spacing-4);
+}
+
+.btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.input {
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  width: 100%;
+  
+  &:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}

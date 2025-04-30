@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: Asistente Virtual con IA para YouTube - Usa Tu Clave API Personal",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Obtén resúmenes de videos de YouTube con inteligencia artificial: chatea con los videos, haz preguntas y mantén el control total con tu clave API personal.",
+    "description": "The description of the extension"
+  }
+} 

@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: Assistant d'IA YouTube - Utilise Ta Clé API Personnelle",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Résume et analyse tes vidéos YouTube avec l'IA : chatte avec le contenu, obtiens des résumés instantanés, et garde le contrôle avec ta clé API personnelle.",
+    "description": "The description of the extension"
+  }
+} 

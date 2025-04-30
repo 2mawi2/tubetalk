@@ -1,0 +1,30 @@
+#tubetalk-player-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#tubetalk-player-button:hover {
+  opacity: 1 !important;
+}
+
+#tubetalk-player-button svg {
+  opacity: 0.9;
+  transition: opacity 0.1s ease-in-out;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+#tubetalk-player-button:hover svg {
+  opacity: 1;
+}
+
+/* Adjust the button position in the controls */
+.ytp-right-controls > #tubetalk-player-button {
+  order: 2;
+  display: flex !important;
+}
+  

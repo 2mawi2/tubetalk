@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: YouTube के लिए AI सहायक - अपनी API कुंजी का प्रयोग करें",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "AI के साथ YouTube वीडियो को समझें: प्रश्न पूछें, सारांश पाएं और अपनी API कुंजी से नियंत्रण रखें।",
+    "description": "The description of the extension"
+  }
+} 

@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: YouTube動画を要約・AIチャット - 独自のAPIキーに対応",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "YouTube動画をAIで効率的に理解。動画の要約や質問応答が可能で、自分のAPIキーを使って安全に利用できます。",
+    "description": "The description of the extension"
+  }
+} 

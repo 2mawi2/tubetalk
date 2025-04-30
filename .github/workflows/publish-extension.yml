@@ -1,0 +1,105 @@
+name: Publish Chrome Extension
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/test.yml
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  build-and-publish:
+    needs: [tests]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          # Ensure we're using the latest npm
+          npm install -g npm@latest
+          # Install dependencies and generate lock file if needed
+          npm install
+          # Debug output
+          ls -la
+          echo "Lock file exists:"
+          ls -la package-lock.json || echo "No lock file found"
+
+      - name: Build extension
+        run: npm run build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          VITE_ENABLE_MODEL_SELECTION: ${{ vars.FEATURE_FLAG_RELEASE_ENABLE_MODEL_SELECTION }}
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "dist/manifest.json" ]; then
+            echo "Error: dist/manifest.json not found"
+            exit 1
+          fi
+          if [ ! -f "manifest.json" ]; then
+            echo "Error: manifest.json not found"
+            exit 1
+          fi
+
+      - name: Create zip file
+        run: |
+          cd dist
+          zip -r ../extension.zip *
+          cd ..
+
+      - name: Publish to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: extension/extension.zip
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Bump version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./manifest.json').version")
+          
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+          
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          
+          # Update the main manifest.json
+          node -e "
+            const fs = require('fs');
+            const manifest = require('./manifest.json');
+            manifest.version = '$NEW_VERSION';
+            fs.writeFileSync('./manifest.json', JSON.stringify(manifest, null, 2));
+          "
+          
+          # Copy to dist folder
+          cp manifest.json dist/manifest.json
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest.json
+          git commit -m "chore: bump version [skip ci]" || echo "No changes to commit"
+          git push

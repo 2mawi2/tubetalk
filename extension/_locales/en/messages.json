@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: AI Assistant for YouTube - Use Your Own API Key",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Transform YouTube videos with AI chat and summaries. Ask questions, get instant answers, and use your own API key for privacy.",
+    "description": "The description of the extension"
+  }
+}

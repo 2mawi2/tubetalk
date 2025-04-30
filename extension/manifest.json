@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
+  "version": "1.2.17",
+  "description": "__MSG_extensionDescription__",
+  "author": {
+    "email": "mawistudios@gmail.com"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "https://openrouter.ai/*"
+  ],
+  "background": {
+    "service_worker": "src/extension/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "src/extension/content_script.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/extension/*.js",
+        "src/common/**/*.*",
+        "icons/*",
+        "src/auth/*.*"
+      ],
+      "matches": [
+        "*://*.youtube.com/*",
+        "https://openrouter.ai/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "toggle-sidebar-from-key-combination": {
+      "suggested_key": {
+        "default": "Alt+Y"
+      },
+      "description": "Toggle sidebar"
+    }
+  }
+}

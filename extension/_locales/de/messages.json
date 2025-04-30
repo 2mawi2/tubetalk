@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+      "message": "TubeTalk: YouTube KI Chat & Zusammenfassung - Eigener API Schlüssel",
+      "description": "The name of the extension"
+  },
+  "extensionDescription": {
+      "message": "YouTube Videos mit KI zusammenfassen und per Chat erkunden. Stelle Fragen, erhalte Antworten und behalte die Kontrolle mit deinem eigenen API Schlüssel.",
+      "description": "The description of the extension"
+  }
+  }

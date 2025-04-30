@@ -1,0 +1,76 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true,
+    "webextensions": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "react",
+    "@typescript-eslint",
+    "react-hooks"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    // React rules
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "react/display-name": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "off",
+
+    // TypeScript rules
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/ban-ts-comment": ["warn", {
+      "ts-ignore": "allow-with-description",
+      "ts-expect-error": "allow-with-description"
+    }],
+    "@typescript-eslint/no-non-null-assertion": "off",
+
+    // General rules
+    "no-console": "off",
+    "no-constant-condition": ["error", {
+      "checkLoops": false
+    }]
+  },
+  "ignorePatterns": [
+    "vendor/**/*",
+    "dist/**/*",
+    "node_modules/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/test/**/*",
+    "**/tests/**/*",
+    "**/e2e/**/*",
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/test/**/*", "**/tests/**/*", "**/e2e/**/*", "**/eval/**/*"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "no-console": "off"
+      }
+    }
+  ]
+} 

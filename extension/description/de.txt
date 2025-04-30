@@ -1,0 +1,78 @@
+TubeTalk ist die ultimative Chrome-Erweiterung, die KI-gestützten Chat mit sofortigen Videozusammenfassungen kombiniert. Du behältst dabei die volle Kontrolle durch deinen eigenen OpenAI oder OpenRouter API-Schlüssel. Verwandle deine YouTube-Erfahrung und mach aus passivem Zuschauen aktives Lernen mit KI-gestützten Erkenntnissen.
+
+Hauptvorteile:
+
+💬 KI-Video-Chat & Zusammenfassung: Stelle Fragen zu jedem Teil von YouTube-Videos und erhalte sofortige, KI-generierte Zusammenfassungen. Bekomme Antworten mit Zeitstempeln, um tiefer in interessante Themen einzutauchen, wie ein persönlicher Tutor für jedes Video!
+
+🔑 Dein API-Schlüssel, deine Kontrolle: Anders als andere Erweiterungen lässt dich TubeTalk deinen eigenen OpenAI oder OpenRouter API-Schlüssel nutzen. Das bedeutet mehr Privatsphäre, Sicherheit und volle Kontrolle über deine API-Nutzung, ohne auf Drittanbieter angewiesen zu sein.
+
+🧠 Interaktives Lernen: Verwandle passives Video-Schauen in aktive Beteiligung. Perfekt für Studierende, Forscher, Berufstätige oder jeden, der schnell wertvolle Erkenntnisse aus YouTube-Videos ziehen möchte.
+
+Hauptfunktionen:
+
+• KI-gestützter YouTube-Chat: Interagiere mit Videos, indem du Fragen stellst und KI-generierte Antworten mit Zeitstempeln direkt in YouTube erhältst.
+• Sofortige Video-Zusammenfassung: Erhalte schnelle, präzise KI-Zusammenfassungen von YouTube-Videos, um die Hauptpunkte zu erfassen, ohne das ganze Video schauen zu müssen.
+• Eigener API-Schlüssel: Nutze deinen eigenen OpenAI oder OpenRouter API-Schlüssel für personalisierte KI-Interaktionen und vollständige Privatsphäre.
+• Intelligente Navigation: Klicke auf Zeitstempel in KI-Antworten, um direkt zu bestimmten Stellen im Video zu springen.
+• Mehrsprachige Unterstützung: Funktioniert nahtlos mit YouTube-Untertiteln in verschiedenen Sprachen.
+• Schnellzugriff: Aktiviere TubeTalk sofort mit der einfachen Alt+Y Tastenkombination.
+• Dark Mode & Anpassung: Pass das Aussehen der Erweiterung an deine Vorlieben an, inklusive Dark Mode.
+
+Perfekt für:
+
+• Studierende, die Vorlesungen und Lehrinhalte analysieren.
+• Forscher, die Videomaterial untersuchen.
+• Berufstätige, die sich über Brancheninhalte auf dem Laufenden halten.
+• Lebenslanges Lernen durch effizientes Lernen auf YouTube.
+
+So startest du:
+
+1. Installiere TubeTalk: Füge die TubeTalk-Erweiterung aus dem Chrome Web Store zu deinem Browser hinzu.
+2. Gib deinen API-Schlüssel ein: Öffne die Erweiterungseinstellungen und trage deinen OpenAI oder OpenRouter API-Schlüssel ein.
+3. Öffne ein YouTube-Video: Gehe zu einem beliebigen YouTube-Video mit verfügbaren Untertiteln.
+4. Aktiviere TubeTalk: Drücke Alt+Y, um mit dem Video per KI-Chat und Zusammenfassungen zu interagieren.
+
+Datenschutz im Fokus:
+
+Bei Verwendung deines eigenen API-Schlüssels erfolgt die gesamte KI-Verarbeitung über deine direkte Verbindung mit OpenAI oder OpenRouter. Deine Daten bleiben sicher und du behältst die volle Kontrolle über deine API-Nutzung.
+
+Hinweis:
+
+- YouTube-Untertitel erforderlich: TubeTalk benötigt YouTube-Untertitel, um effektiv zu funktionieren.
+
+Häufig gestellte Fragen (FAQ)
+----------------------------------------
+
+FRAGE: Was macht TubeTalk anders als andere YouTube-Zusammenfassungs-Erweiterungen?
+ANTWORT: TubeTalk bietet nicht nur sofortige Videozusammenfassungen, sondern auch interaktiven KI-Chat direkt in YouTube-Videos. Außerdem kannst du deinen eigenen OpenAI oder OpenRouter API-Schlüssel verwenden, was dir volle Kontrolle über deine Daten und Privatsphäre gibt.
+
+FRAGE: Wie bekomme ich einen OpenAI oder OpenRouter API-Schlüssel?
+ANTWORT: Du kannst dich für einen API-Schlüssel auf der OpenAI-Website (https://openai.com/) oder OpenRouter-Website (https://openrouter.ai/) registrieren. Sobald du deinen API-Schlüssel hast, gib ihn in den TubeTalk-Einstellungen ein.
+
+FRAGE: Kann ich TubeTalk mit jedem YouTube-Video nutzen?
+ANTWORT: TubeTalk funktioniert mit YouTube-Videos, die Untertitel haben. Die KI verwendet diese Untertitel, um genaue Zusammenfassungen und Antworten zu generieren.
+
+FRAGE: Ist TubeTalk kostenlos?
+ANTWORT: Ja, TubeTalk ist kostenlos zu installieren und zu nutzen. Allerdings können bei der Nutzung deines OpenAI oder OpenRouter API-Schlüssels Kosten entsprechend deines Nutzungsplans bei diesen Diensten entstehen.
+
+FRAGE: Unterstützt TubeTalk mehrere Sprachen?
+ANTWORT: Absolut! TubeTalk funktioniert mit YouTube-Untertiteln in verschiedenen Sprachen und ermöglicht dir die Interaktion mit Videos in deiner bevorzugten Sprache.
+
+FRAGE: Wie sicher ist mein API-Schlüssel bei TubeTalk?
+ANTWORT: Dein API-Schlüssel wird lokal in deinem Browser gespeichert und nie an unsere Server gesendet. Alle Interaktionen laufen direkt zwischen deinem Browser und OpenAI oder OpenRouter.
+
+FRAGE: Kann ich das verwendete KI-Modell in TubeTalk anpassen?
+ANTWORT: Ja, da du deinen eigenen API-Schlüssel verwendest, kannst du konfigurieren, welche OpenAI-Modelle du basierend auf deinem API-Zugang nutzen möchtest.
+
+FRAGE: Was passiert, wenn ein Video keine Untertitel hat?
+ANTWORT: TubeTalk benötigt Untertitel, um richtig zu funktionieren. Wenn ein Video keine Untertitel hat, kann die KI den Inhalt nicht verarbeiten.
+
+FRAGE: Wie kann ich meinen API-Schlüssel aktualisieren oder ändern?
+ANTWORT: Gehe zu den TubeTalk-Einstellungen, indem du auf das Erweiterungssymbol in deiner Browser-Toolbar klickst. Dort kannst du deinen API-Schlüssel jederzeit aktualisieren oder ändern.
+
+FRAGE: Brauchst du Hilfe oder möchtest Feedback geben?
+ANTWORT: Für Unterstützung oder Feedback öffne bitte ein Issue in unserem GitHub Repository: https://github.com/2mawi2/tubetalk/issues
+
+----------------------------------------
+
+Verbessere deine YouTube-Erfahrung mit TubeTalks KI-gestütztem interaktiven Chat und sofortigen Videozusammenfassungen. Verwandle jedes Video in eine spannende, personalisierte Lernerfahrung. Installiere TubeTalk noch heute und entdecke YouTube auf eine völlig neue Art!

@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production build
+/dist
+/build
+
+# Development
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+*.pem
+
+# Testing
+/coverage
+
+# Chrome Extension specific
+*.crx
+*.pem
+*.zip
+
+# Vite
+.vite/ 
+
+node_modules/
+vendor/
+
+test-results/
+test-results/.last-run.json

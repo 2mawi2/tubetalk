@@ -1,0 +1,215 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ModelStore } from './modelStore'
+import { configure, runInAction } from 'mobx'
+import type { ApiAdapter, OpenRouterModel } from '../common/adapters/ApiAdapter'
+
+// Configure MobX for strict mode
+configure({
+  enforceActions: 'always',
+})
+
+// Mock the storage adapter - must be before any variable declarations
+const mockSettingsStorageAdapter = {
+  getCustomModels: vi.fn(),
+  setCustomModels: vi.fn()
+}
+
+vi.mock('./settingsStorageAdapter', () => ({
+  DEFAULT_MODEL: 'google/gemini-2.0-flash-001',
+  settingsStorageAdapter: mockSettingsStorageAdapter
+}))
+
+class TestApiAdapter implements ApiAdapter {
+  async generateStreamResponse() {
+    return null
+  }
+
+  async fetchAvailableModels(): Promise<OpenRouterModel[]> {
+    return [
+      {
+        id: 'test-model',
+        name: 'Test Model',
+        context_length: 4096,
+        pricing: {
+          prompt: '0.000001',
+          completion: '0.000002',
+          image: '0',
+          request: '0'
+        }
+      }
+    ]
+  }
+}
+
+// Sample models for testing
+const sampleModels = [
+  {
+    id: 'google/gemini-2.0-flash-001',
+    name: 'Gemini 2.0 Flash',
+    context_length: 4096,
+    pricing: {
+      prompt: '0.00025',
+      completion: '0.00125',
+      image: '0',
+      request: '0'
+    }
+  },
+  {
+    id: 'openai/gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    context_length: 4096,
+    pricing: {
+      prompt: '0.0015',
+      completion: '0.0015',
+      image: '0',
+      request: '0'
+    }
+  },
+  {
+    id: 'anthropic/claude-3-haiku',
+    name: 'Claude 3 Haiku',
+    context_length: 4096,
+    pricing: {
+      prompt: '0.00025',
+      completion: '0.00125',
+      image: '0',
+      request: '0'
+    }
+  }
+];
+
+describe('ModelStore', () => {
+  let modelStore: ModelStore
+  let storedModels: string[] = []
+  
+  const mockApiAdapter = {
+    fetchAvailableModels: vi.fn(),
+    generateStreamResponse: vi.fn()
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    storedModels = []
+    mockSettingsStorageAdapter.getCustomModels.mockImplementation(async () => [...storedModels])
+    mockSettingsStorageAdapter.setCustomModels.mockImplementation(async (models: string[]) => {
+      storedModels = [...models]
+      return Promise.resolve()
+    })
+    
+    modelStore = new ModelStore(mockApiAdapter as any)
+  })
+
+  it('initializes with default model', async () => {
+    await modelStore.init()
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001'])
+    expect(mockSettingsStorageAdapter.getCustomModels).toHaveBeenCalled()
+  })
+
+  it('loads custom models on init', async () => {
+    const customModel = 'test-model'
+    storedModels = [customModel]
+    
+    await modelStore.init()
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001', customModel])
+  })
+
+  it('prevents adding duplicate models', async () => {
+    await modelStore.init()
+    
+    // Try to add the default model
+    await modelStore.addModel('google/gemini-2.0-flash-001')
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001'])
+    expect(modelStore.error).toEqual({ message: 'duplicateModelError' })
+    
+    // Add a custom model
+    const customModel = 'test-model'
+    await modelStore.addModel(customModel)
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001', customModel])
+    expect(modelStore.error).toBeNull()
+    
+    // Try to add the same custom model again
+    await modelStore.addModel(customModel)
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001', customModel])
+    expect(modelStore.error).toEqual({ message: 'duplicateModelError' })
+  })
+
+  it('successfully adds and removes custom models', async () => {
+    await modelStore.init()
+    const customModel = 'test-model'
+    
+    // Add model
+    await modelStore.addModel(customModel)
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001', customModel])
+    expect(mockSettingsStorageAdapter.setCustomModels).toHaveBeenCalledWith([customModel])
+    
+    // Remove model
+    await modelStore.removeModel(customModel)
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001'])
+    expect(mockSettingsStorageAdapter.setCustomModels).toHaveBeenCalledWith([])
+  })
+
+  it('prevents removing the default model', async () => {
+    await modelStore.init()
+    
+    await modelStore.removeModel('google/gemini-2.0-flash-001')
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001'])
+    expect(mockSettingsStorageAdapter.setCustomModels).not.toHaveBeenCalled()
+  })
+
+  it('handles empty input gracefully', async () => {
+    await modelStore.init()
+    await modelStore.addModel('')
+    expect(modelStore.models).toEqual(['google/gemini-2.0-flash-001'])
+    expect(modelStore.error).toBeNull()
+  })
+
+  it('clears error when requested', async () => {
+    await modelStore.init()
+    
+    // Set error by adding duplicate
+    await modelStore.addModel('google/gemini-2.0-flash-001')
+    expect(modelStore.error).toEqual({ message: 'duplicateModelError' })
+    
+    // Clear error
+    modelStore.clearError()
+    expect(modelStore.error).toBeNull()
+  })
+
+  it('provides custom models list without default model', async () => {
+    await modelStore.init()
+    const customModel = 'test-model'
+    
+    await modelStore.addModel(customModel)
+    expect(modelStore.customModels).toEqual([customModel])
+  })
+
+  it('persists models across store instances', async () => {
+    // First instance adds a model
+    const store1 = new ModelStore(new TestApiAdapter())
+    await store1.init()
+    await store1.addModel('test-model')
+
+    // Second instance should load the same models
+    const store2 = new ModelStore(new TestApiAdapter())
+    await store2.init()
+    expect(store2.models).toEqual(['google/gemini-2.0-flash-001', 'test-model'])
+  })
+
+  it('should format price correctly', () => {
+    const model = sampleModels[0];
+    const price = modelStore.formatPrice(model);
+    // (0.00025 + 0.00125) * 1000000 = 1500
+    expect(price).toBe('$1500.00M');
+  });
+
+  it('should sort available models by name', () => {
+    runInAction(() => {
+      modelStore.availableModels = sampleModels;
+    });
+
+    const sortedModels = modelStore.sortedAvailableModels;
+    expect(sortedModels[0].name).toBe('Claude 3 Haiku');
+    expect(sortedModels[1].name).toBe('Gemini 2.0 Flash');
+    expect(sortedModels[2].name).toBe('GPT-4o Mini');
+  });
+}) 

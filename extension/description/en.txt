@@ -1,0 +1,78 @@
+TubeTalk is the ultimate Chrome extension that combines interactive AI chat with instant video summaries, giving you full control through your own OpenAI or OpenRouter API key. Transform your YouTube experience by turning passive watching into active learning with AI-powered insights.
+
+Key Benefits:
+
+💬 AI Video Chat & Summary: Ask questions about any part of YouTube videos and get instant, AI-generated summaries. Receive timestamped answers to dive deeper into topics that interest you. It's like having a personal tutor for every video!
+
+🔑 Your API, Your Control: Unlike other extensions, TubeTalk lets you use your own OpenAI or OpenRouter API key. This means enhanced privacy, security, and full control over your API usage without relying on third-party services.
+
+🧠 Interactive Learning: Turn passive video watching into active engagement. Perfect for students, researchers, professionals, or anyone looking to extract valuable insights from YouTube videos quickly.
+
+Key Features:
+
+• AI-Powered YouTube Chat: Engage with videos by asking questions and receiving AI-generated, timestamped answers directly within YouTube.
+• Instant Video Summarizer: Get quick, accurate AI summaries of YouTube videos to grasp main points without watching the entire video.
+• Custom API Key Support: Use your own OpenAI or OpenRouter API key for personalized AI interactions and complete privacy.
+• Smart Navigation: Click on timestamps in AI responses to jump directly to specific moments in the video.
+• Multilingual Support: Works seamlessly with YouTube's video captions in multiple languages.
+• Quick Access: Activate TubeTalk instantly with the simple Alt+Y keyboard shortcut.
+• Dark Mode & Customization: Customize the extension's appearance, including dark mode, to suit your preferences.
+
+Perfect For:
+
+• Students analyzing lectures and educational content.
+• Researchers exploring video materials.
+• Professionals staying updated with industry content.
+• Lifelong learners wanting to learn efficiently from YouTube.
+
+Getting Started:
+
+1. Install TubeTalk: Add the TubeTalk extension to your Chrome browser from the Chrome Web Store.
+2. Enter Your API Key: Open the extension settings and input your OpenAI or OpenRouter API key.
+3. Open a YouTube Video: Navigate to any YouTube video that has captions available.
+4. Activate TubeTalk: Press Alt+Y to start interacting with the video using AI chat and summaries.
+
+Privacy Focused:
+
+When using your own API key, all AI processing happens through your direct connection with OpenAI or OpenRouter. Your data stays secure, and you have full control over your API usage.
+
+Note:
+
+- YouTube Captions Required: TubeTalk requires YouTube video captions to function effectively.
+
+Frequently Asked Questions (FAQ)
+----------------------------------------
+
+QUESTION: What makes TubeTalk different from other YouTube summarizer extensions?
+ANSWER: TubeTalk not only provides instant video summaries but also offers interactive AI chat within YouTube videos. Plus, you can use your own OpenAI or OpenRouter API key, ensuring full control over your data and privacy.
+
+QUESTION: How do I get an OpenAI or OpenRouter API key?
+ANSWER: You can sign up for an API key on the OpenAI website (https://openai.com/) or OpenRouter website (https://openrouter.ai/). Once you have your API key, enter it into TubeTalk's settings.
+
+QUESTION: Can I use TubeTalk with any YouTube video?
+ANSWER: TubeTalk works with YouTube videos that have captions. The AI uses these captions to generate accurate summaries and answers.
+
+QUESTION: Is TubeTalk free to use?
+ANSWER: Yes, TubeTalk is free to install and use. However, using your OpenAI or OpenRouter API key may incur charges based on your usage plan with those services.
+
+QUESTION: Does TubeTalk support multiple languages?
+ANSWER: Absolutely! TubeTalk works with YouTube captions in multiple languages, allowing you to interact with videos in your preferred language.
+
+QUESTION: How secure is my API key with TubeTalk?
+ANSWER: Your API key is stored locally in your browser and is never sent to our servers. All interactions are directly between your browser and OpenAI or OpenRouter.
+
+QUESTION: Can I customize the AI model used by TubeTalk?
+ANSWER: Yes, since you're using your own API key, you can configure which OpenAI models you want to use based on your API access.
+
+QUESTION: What if a video doesn't have captions?
+ANSWER: TubeTalk requires captions to function properly. If a video doesn't have captions, the AI won't be able to process the content.
+
+QUESTION: How do I update or change my API key?
+ANSWER: Go to TubeTalk's settings by clicking on the extension icon in your browser toolbar. From there, you can update or change your API key at any time.
+
+QUESTION: Need help or want to give feedback?
+ANSWER: For support or feedback, please open an issue on our GitHub repository: https://github.com/2mawi2/tubetalk/issues
+
+----------------------------------------
+
+Enhance your YouTube experience with TubeTalk's AI-powered interactive chat and instant video summaries. Turn every video into an engaging, personalized learning session. Install TubeTalk today and start exploring YouTube like never before!

@@ -1,0 +1,441 @@
+
+.message {
+  margin: 6px 0;
+  padding: 0 8px;
+  max-width: 98%;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+
+  &:hover .message-actions {
+    opacity: 1;
+  }
+
+  &.user {
+    margin-left: auto;
+    background-color: var(--message-user-background);
+    border-radius: 12px;
+    padding: 10px 14px;
+    align-self: flex-end;
+    color: white;
+    font-size: 1.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    border-left: 3px solid transparent;
+
+    .message-content {
+      font-weight: 400;
+      color: white;
+    }
+
+    .timestamp-link {
+      background-color: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--button-primary-text);
+    }
+
+    .message-image {
+      margin-left: auto;
+    }
+
+    &:last-of-type {
+      border-left-color: var(--message-user-background);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.summarize-button {
+      font-weight: 500;
+    }
+  }
+
+  &.assistant {
+    margin-right: auto;
+    margin-bottom: 1.5rem;
+    background-color: var(--background-secondary);
+    border-radius: 12px;
+    padding: 14px 16px;
+    padding-bottom: 4rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+
+    .message-content {
+      margin-bottom: 2rem;
+    }
+
+    .message-actions {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 1;
+    }
+
+    &:hover .message-actions {
+      opacity: 1;
+    }
+
+    &.streaming {
+      transition: all 0.3s ease;
+    }
+
+    &[data-testid="message-assistant-welcome"] {
+      margin-bottom: 2rem;
+    }
+
+    pre {
+      margin: 1rem 0;
+      padding: 1rem;
+      background-color: var(--background-tertiary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      position: relative;
+      white-space: pre-wrap;
+      word-break: break-word;
+
+      code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+        color: inherit;
+        border: none;
+        border-radius: 0;
+        white-space: inherit;
+      }
+    }
+
+    code {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      background-color: var(--background-tertiary);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .devin-arguments {
+      background-color: var(--background-tertiary);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+      border: 1px solid var(--border-color);
+
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 1rem 0;
+        color: var(--text-primary);
+      }
+
+      pre {
+        margin: 0.5rem 0;
+      }
+    }
+
+    ul {
+      list-style-position: inside;
+      padding-left: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    ol {
+      list-style-position: outside;
+      padding-left: 2rem;
+      margin: 1rem 0;
+      counter-reset: item;
+
+      li {
+        display: list-item;
+        margin: 0.75rem 0;
+        padding-left: 0.5rem;
+        line-height: 1.6;
+        font-size: 1.25rem;
+        color: var(--text-primary);
+
+        &::marker {
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+      }
+    }
+
+    li {
+      margin: 0.75rem 0;
+      padding-left: 0.5rem;
+      line-height: 1.6;
+      position: relative;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      
+      &::marker {
+        color: var(--text-secondary);
+      }
+    }
+
+    .prominent-sentence {
+      font-size: 1.75rem;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      background-color: var(--background-tertiary);
+      border-left: 4px solid var(--button-primary-background);
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .short-summary {
+      padding: 1.25rem;
+      background-color: var(--background-secondary);
+      border-radius: 0.75rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border-color);
+
+      p {
+        font-size: 1.25rem;
+        line-height: 1.6;
+        margin: 0;
+        color: var(--text-primary);
+      }
+    }
+
+    .key-insights {
+      background-color: var(--background-secondary);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      border: 1px solid var(--border-color);
+
+      h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75em;
+        color: var(--text-primary);
+        line-height: 1.4;
+      }
+
+      h3 {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap; /* Allow wrapping for narrow sidebars */
+        gap: 0.75rem;
+        font-size: 1.6rem;
+        font-weight: 600;
+        margin: 1.5em 0 0.75em;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        line-height: 1.4;
+
+        &:first-child {
+          margin-top: 0;
+        }
+
+        .timestamp-link {
+          margin-right: 0.75rem;
+          margin-left: 0;
+          order: -1; /* Places timestamp before heading text */
+          flex-shrink: 0; /* Prevent timestamp from shrinking */
+        }
+      }
+
+      p {
+        font-size: 1.25rem;
+        margin: 0.75em 0;
+        color: var(--text-primary);
+        line-height: 1.6;
+      }
+
+      ul {
+        list-style-position: outside;
+        padding-left: 1.5rem;
+        
+        li {
+          display: list-item;
+          padding-left: 0.5rem;
+          margin: 0.75rem 0;
+          
+          /* Prevent timestamps within bullet points from breaking layout */
+          .timestamp-link {
+            display: none; /* Hide timestamps in bullet points completely */
+          }
+        }
+      }
+    }
+
+    .message-image {
+      margin-right: auto;
+    }
+  }
+
+  .message-content {
+    padding: 0;
+    line-height: 1.5;
+    font-size: 14px;
+    color: var(--text-primary);
+
+    .user & {
+      color: white;
+    }
+  }
+
+  .message-image {
+    width: 100%;
+    max-width: 400px;
+    margin: 8px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--background-tertiary);
+    position: relative;
+
+    &::before {
+      content: '';
+      display: block;
+      padding-top: 56.25%; // 16:9 aspect ratio
+    }
+
+    img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      background-color: var(--background-tertiary);
+      will-change: transform;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+  }
+
+  .timestamp-link {
+    font-size: 1rem;
+    padding: 0.35rem 0.6rem;
+    background-color: var(--button-primary-background);
+    color: var(--button-primary-text);
+    border: 1px solid rgba(66, 133, 244, 0.3);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0.25rem;
+    font-weight: 500;
+    box-shadow: var(--button-shadow);
+
+    /* Add styles to ensure timestamps don't break layout */
+    &.inline-timestamp {
+      font-size: 0.85rem;
+      padding: 0.2rem 0.4rem;
+      margin: 0 0.15rem;
+    }
+
+    &:hover {
+      background-color: var(--button-primary-hover);
+      border-color: rgba(66, 133, 244, 0.4);
+      color: var(--button-primary-text);
+      transform: translateY(-1px);
+      box-shadow: var(--button-hover-shadow);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &.error {
+    background-color: var(--background-primary);
+    border: 1px solid var(--status-error);
+    color: var(--status-error);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 1.25rem;
+    line-height: 1.5;
+    
+    [data-theme="dark"] & {
+      background-color: rgba(234, 67, 53, 0.1);
+      border-color: rgba(234, 67, 53, 0.5);
+      color: #ff6b63;
+    }
+  }
+
+  &__skeleton {
+    padding: 1.5rem 2rem;
+    background-color: var(--background-secondary);
+    border-radius: 15px;
+    margin-right: auto;
+    max-width: 98%;
+    min-width: 300px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+    &-line {
+      height: 1.1rem;
+      background: linear-gradient(
+        90deg,
+        var(--background-tertiary) 0%,
+        var(--background-primary) 50%,
+        var(--background-tertiary) 100%
+      );
+      background-size: 200% 100%;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      animation: shimmer 1.5s infinite;
+
+      &:nth-child(1) { width: 98%; }
+      &:nth-child(2) { width: 94%; }
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .summarize-container {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    
+    .summarize-button {
+      padding: 10px 14px;
+      font-size: 1.25rem;
+      background-color: var(--message-user-background);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 400;
+      max-width: fit-content;
+      align-self: flex-end;
+      position: relative;
+      z-index: 2;
+      
+      &:hover {
+        background-color: color-mix(in srgb, var(--message-user-background) 90%, transparent);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}

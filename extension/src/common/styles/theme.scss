@@ -1,0 +1,108 @@
+@use "sass:color";
+
+:root {
+  // Base colors
+  --background-primary: #ffffff;
+  --background-secondary: #f8f9fa;
+  --background-tertiary: #f5f5f5;
+  --border-color: #e0e0e0;
+  --text-primary: #333333;
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-tertiary: rgba(0, 0, 0, 0.4);
+  
+  // Input colors (light mode)
+  --input-background: #ffffff;
+  --input-border: #e0e0e0;
+  --input-text: #202020;
+  --input-placeholder: rgba(0, 0, 0, 0.4);
+  --input-focus-background: #ffffff;
+  --input-focus-border: #4285F4;
+  
+  // Button colors
+  --button-primary-background: #4285F4;
+  --button-primary-text: #ffffff;
+  --button-primary-hover: #3367D6;
+  --button-shadow: rgba(66, 133, 244, 0.2);
+  --button-hover-shadow: rgba(66, 133, 244, 0.3);
+  
+  // Toggle colors
+  --toggle-background: #cccccc;
+  --toggle-background-checked: #4285F4;
+  --toggle-handle: #ffffff;
+  
+  // Status colors
+  --status-info: #4285F4;
+  --status-success: #34A853;
+  --status-warning: #FBBC05;
+  --status-error: #EA4335;
+  
+  // Header colors (light mode)
+  --header-background: #f8f9fa;
+  --header-border: #e0e0e0;
+  --header-text: #202020;
+  --header-icon: #555555;
+  --header-icon-hover: #202020;
+  --header-icon-hover-bg: rgba(0, 0, 0, 0.05);
+  
+  // Sidebar colors (light mode)
+  --sidebar-background: #ffffff;
+  --sidebar-text: #202020;
+  --sidebar-border: #e0e0e0;
+  
+  // Tooltip colors
+  --tooltip-background: rgba(0, 0, 0, 0.8);
+  --tooltip-text: #ffffff;
+  
+  // Message colors
+  --message-assistant-background: #f8f9fa;
+  --message-user-background: #4285F4;
+}
+
+[data-theme="dark"] {
+  --background-primary: #202020;
+  --background-secondary: #303030;
+  --background-tertiary: #2a2a2a;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-primary: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  
+  // Input colors (dark mode)
+  --input-background: #303030;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-text: rgba(255, 255, 255, 0.9);
+  --input-placeholder: rgba(255, 255, 255, 0.4);
+  --input-focus-background: #303030;
+  --input-focus-border: #4285F4;
+  
+  --button-primary-background: #4285F4;
+  --button-primary-text: #ffffff;
+  --button-primary-hover: #3367D6;
+  --button-shadow: rgba(66, 133, 244, 0.2);
+  --button-hover-shadow: rgba(66, 133, 244, 0.3);
+  
+  --toggle-background: rgba(255, 255, 255, 0.2);
+  --toggle-background-checked: #4285F4;
+  --toggle-handle: #ffffff;
+  
+  // Header colors (dark mode)
+  --header-background: #202020;
+  --header-border: #303030;
+  --header-text: rgba(255, 255, 255, 0.9);
+  --header-icon: rgba(255, 255, 255, 0.7);
+  --header-icon-hover: #ffffff;
+  --header-icon-hover-bg: rgba(255, 255, 255, 0.1);
+  
+  // Sidebar colors (dark mode)
+  --sidebar-background: #202020;
+  --sidebar-text: rgba(255, 255, 255, 0.9);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  
+  // Tooltip colors (same as light mode)
+  --tooltip-background: rgba(0, 0, 0, 0.8);
+  --tooltip-text: #ffffff;
+  
+  // Message colors
+  --message-assistant-background: #303030;
+  --message-user-background: #4285F4;
+} 

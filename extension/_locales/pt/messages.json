@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "TubeTalk: Resumo e Chat de YouTube com IA - Sua Chave API",
+    "description": "The name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Transforme vídeos do YouTube com IA: chat interativo, resumos instantâneos e controle total usando sua própria chave API do OpenAI/OpenRouter.",
+    "description": "The description of the extension"
+  }
+} 
