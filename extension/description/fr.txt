@@ -34,7 +34,7 @@ Pour Commencer :
 
 Axé sur la Confidentialité :
 
-En utilisant ta propre clé API, tout le traitement IA se fait via ta connexion directe avec OpenAI ou OpenRouter. Tes données restent sécurisées, et tu gardes un contrôle total sur ton utilisation de l'API.
+En utilisant ta propre clé API, tout le traitement IA se fait via ta connexion directe avec OpenAI ou OpenRouter. Tes données restent sécurisées, et tu gardes un contrôle total sur ton utilisation de l'API. De plus, TubeTalk est entièrement open source ! Tu peux inspecter le code toi-même sur [GitHub](https://github.com/2mawi2/tubetalk) pour vérifier comment tes données et clés sont gérées.
 
 Note :
 

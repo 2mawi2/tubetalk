@@ -34,7 +34,7 @@ So startest du:
 
 Datenschutz im Fokus:
 
-Bei Verwendung deines eigenen API-Schlüssels erfolgt die gesamte KI-Verarbeitung über deine direkte Verbindung mit OpenAI oder OpenRouter. Deine Daten bleiben sicher und du behältst die volle Kontrolle über deine API-Nutzung.
+Bei Verwendung deines eigenen API-Schlüssels erfolgt die gesamte KI-Verarbeitung über deine direkte Verbindung mit OpenAI oder OpenRouter. Deine Daten bleiben sicher und du behältst die volle Kontrolle über deine API-Nutzung. Zudem ist TubeTalk vollständig Open Source! Du kannst den Code selbst auf [GitHub](https://github.com/2mawi2/tubetalk) überprüfen, um sicherzustellen, wie deine Daten und Schlüssel gehandhabt werden.
 
 Hinweis:
 

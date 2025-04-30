@@ -34,7 +34,7 @@ Getting Started:
 
 Privacy Focused:
 
-When using your own API key, all AI processing happens through your direct connection with OpenAI or OpenRouter. Your data stays secure, and you have full control over your API usage.
+When using your own API key, all AI processing happens through your direct connection with OpenAI or OpenRouter. Your data stays secure, and you have full control over your API usage. Plus, TubeTalk is fully open source! You can inspect the code yourself on [GitHub](https://github.com/2mawi2/tubetalk) to verify how your data and keys are handled.
 
 Note:
 

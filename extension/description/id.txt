@@ -34,7 +34,7 @@ Cara Mulai:
 
 Fokus pada Privasi:
 
-Ketika pakai API key sendiri, semua proses AI terjadi lewat koneksi langsung dengan OpenAI atau OpenRouter. Data kamu aman, dan kamu punya kendali penuh atas penggunaan API.
+Ketika pakai API key sendiri, semua proses AI terjadi lewat koneksi langsung dengan OpenAI atau OpenRouter. Data kamu aman, dan kamu punya kendali penuh atas penggunaan API. **Plus, TubeTalk sepenuhnya open source! Kamu bisa periksa sendiri kodenya di [GitHub](https://github.com/2mawi2/tubetalk) untuk memastikan bagaimana data dan kunci API-mu ditangani.**
 
 Catatan:
 

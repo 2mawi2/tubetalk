@@ -34,7 +34,7 @@ Cómo Empezar:
 
 Enfoque en la Privacidad:
 
-Al usar tu propia clave API, todo el procesamiento de IA ocurre a través de tu conexión directa con OpenAI u OpenRouter. Tus datos permanecen seguros y tienes control total sobre el uso de tu API.
+Al usar tu propia clave API, todo el procesamiento de IA ocurre a través de tu conexión directa con OpenAI u OpenRouter. Tus datos permanecen seguros y tienes control total sobre el uso de tu API. ¡Además, TubeTalk es totalmente de código abierto! Puedes inspeccionar el código tú mismo en [GitHub](https://github.com/2mawi2/tubetalk) para verificar cómo se manejan tus datos y claves.
 
 Nota:
 
