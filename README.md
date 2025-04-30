@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![TubeTalk Promo Banner](extension/icons/promo/promo_1400x560.png)
+![TubeTalk Promo Banner](extension/icons/promo/promo_1128x191.png)
 
 TubeTalk is a Chrome extension that enhances your YouTube experience by providing AI-powered transcript analysis, summaries, and interactive chat capabilities directly on the YouTube page.
 
