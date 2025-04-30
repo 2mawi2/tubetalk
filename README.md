@@ -1,9 +1,8 @@
 # TubeTalk: AI Assistant for YouTube Videos
 
-[![Tests](https://github.com/2mawi2/tubetalk/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/2mawi2/tubetalk/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![TubeTalk Promo Banner](extension/screenshots/output/promo/en/promo_1400x560.png)
+![TubeTalk Promo Banner](extension/icons/promo/promo_1400x560.png)
 
 TubeTalk is a Chrome extension that enhances your YouTube experience by providing AI-powered transcript analysis, summaries, and interactive chat capabilities directly on the YouTube page.
 
