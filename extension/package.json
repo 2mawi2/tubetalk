@@ -24,17 +24,17 @@
   },
   "dependencies": {
     "@types/html-to-text": "^9.0.4",
-    "dompurify": "^3.2.5",
+    "dompurify": "^3.2.6",
     "html-to-text": "^9.0.5",
     "js-tiktoken": "^1.0.19",
     "mobx": "^6.13.7",
     "mobx-react-lite": "^4.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sass": "^1.86.3",
-    "sharp": "^0.34.1",
+    "sass": "^1.89.1",
+    "sharp": "^0.34.2",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
