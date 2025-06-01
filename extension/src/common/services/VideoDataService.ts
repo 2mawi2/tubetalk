@@ -73,7 +73,9 @@ export class VideoDataService {
   private async fetchTranscriptWithRetry(baseUrl: string, retryCount = 0): Promise<any> {
     try {
       console.log(`[VideoDataService] Fetching transcript, attempt ${retryCount + 1}`);
-      const transcriptResponse = await fetch(baseUrl + '&fmt=json3');
+      const transcriptResponse = await fetch(baseUrl + '&fmt=json3', {
+        credentials: 'include'
+      });
       if (!transcriptResponse.ok) {
         throw new Error(`HTTP error! status: ${transcriptResponse.status}`);
       }
@@ -149,7 +151,9 @@ export class VideoDataService {
   private async fetchPlayerResponseFromHTML(videoId: string): Promise<any> {
     let response: Response;
     try {
-      response = await fetch('https://www.youtube.com/watch?v=' + videoId);
+      response = await fetch('https://www.youtube.com/watch?v=' + videoId, {
+        credentials: 'include'
+      });
     } catch (error) {
       // If network fails
       throw new DataAccessVideoDataError('Network error');
