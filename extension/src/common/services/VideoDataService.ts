@@ -122,7 +122,6 @@ export class VideoDataService {
     try {
       // Legacy API method - known to return empty responses but kept for potential future fixes
       const transcriptResponse = await fetch(baseUrl + '&fmt=json3', { credentials: 'include' });
-      
       if (!transcriptResponse.ok) {
         throw new Error(`HTTP error! status: ${transcriptResponse.status}`);
       }

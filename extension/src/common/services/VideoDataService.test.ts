@@ -247,6 +247,35 @@ describe('VideoDataService', () => {
       .rejects
       .toThrow(DataAccessVideoDataError);
   });
+
+  it('should handle YouTube returning HTML instead of JSON for transcript (logged-in user issue)', async () => {
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'html-transcript-response',
+        title: 'Test Video',
+        shortDescription: 'Test Desc'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON at position 0')) 
+    });
+
+    await expect(videoDataService.fetchVideoData('html-transcript-response'))
+      .rejects
+      .toThrow(DataAccessVideoDataError);
+  });
 });
 
 describe('Token Limit Tests', () => {
