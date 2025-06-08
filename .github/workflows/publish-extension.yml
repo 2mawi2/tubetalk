@@ -76,6 +76,7 @@ jobs:
       - name: Bump version
         run: |
           CURRENT_VERSION=$(node -p "require('./manifest.json').version")
+          echo "PUBLISHED_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
           
           IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
           MAJOR="${VERSION_PARTS[0]}"
@@ -103,3 +104,23 @@ jobs:
           git add manifest.json
           git commit -m "chore: bump version [skip ci]" || echo "No changes to commit"
           git push
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          PUBLISHED_VERSION="${{ env.PUBLISHED_VERSION }}"
+          
+          RELEASE_NOTES=$(git log --oneline --pretty=format:"- %s" $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD | head -20)
+          
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES=$(git log --oneline --since="1 week ago" --pretty=format:"- %s" | head -10)
+          fi
+          
+          gh release create "v$PUBLISHED_VERSION" \
+            --title "v$PUBLISHED_VERSION" \
+            --notes "## Changes
+          ${RELEASE_NOTES:-"- Extension updates and improvements"}
+          
+          🚀 **Available on Chrome Web Store**: [Install TubeTalk](https://chromewebstore.google.com/detail/tubetalk-youtube-ki-chat/cbclkjldgdhdnohefkdhlgmdogcnfhhjj)" \
+            --latest
