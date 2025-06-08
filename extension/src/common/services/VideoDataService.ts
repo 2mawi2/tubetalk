@@ -1,5 +1,6 @@
 import { VideoDataError, NoCaptionsVideoDataError, DataAccessVideoDataError, TokenLimitExceededError } from '../errors/VideoDataError';
 import { getEncoding } from 'js-tiktoken';
+import { fetchYouTubeTranscript } from './YouTubeTranscriptAPI';
 
 interface VideoData {
   videoId: string;
@@ -70,20 +71,76 @@ export class VideoDataService {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
+  private async generateYouTubeAPIAuthHeader(): Promise<string> {
+    // Extract SAPISID from cookies
+    const sapisid = document.cookie
+      .split(';')
+      .find(cookie => cookie.trim().startsWith('SAPISID='))
+      ?.split('=')[1];
+    
+    if (!sapisid) {
+      throw new Error('SAPISID cookie not found');
+    }
+    
+    const timestamp = Math.floor(Date.now() / 1000);
+    const origin = 'https://www.youtube.com';
+    
+    // Create hash similar to YouTube's SAPISIDHASH
+    const hashInput = `${timestamp}_${sapisid}_${origin}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(hashInput);
+    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return `SAPISIDHASH ${timestamp}_${hashHex}`;
+  }
+
+  private async fetchTranscriptWithNewAPI(videoId: string, retryCount = 0): Promise<any> {
+    try {
+      // Get visitor data from YouTube's global state
+      const visitorData = (window as any).ytcfg?.get?.('VISITOR_DATA') || '';
+      
+      // Generate auth header
+      const authHeader = await this.generateYouTubeAPIAuthHeader();
+      
+      return await fetchYouTubeTranscript({
+        videoId,
+        authHeader,
+        visitorData
+      });
+    } catch (error) {
+      if (retryCount < VideoDataService.MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, VideoDataService.RETRY_DELAY));
+        return this.fetchTranscriptWithNewAPI(videoId, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+
   private async fetchTranscriptWithRetry(baseUrl: string, retryCount = 0): Promise<any> {
     try {
-      console.log(`[VideoDataService] Fetching transcript, attempt ${retryCount + 1}`);
-      const transcriptResponse = await fetch(baseUrl + '&fmt=json3', {
-        credentials: 'include'
-      });
+      // Legacy API method - known to return empty responses but kept for potential future fixes
+      const transcriptResponse = await fetch(baseUrl + '&fmt=json3', { credentials: 'include' });
       if (!transcriptResponse.ok) {
         throw new Error(`HTTP error! status: ${transcriptResponse.status}`);
       }
-      console.log(`[VideoDataService] Transcript fetch successful`);
-      return await transcriptResponse.json();
+      
+      const responseText = await transcriptResponse.text();
+      
+      // Check if response is empty (current YouTube behavior)
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty response from legacy API');
+      }
+      
+      // Check if response is HTML (indicates login redirect or blocking)
+      if (responseText.trim().startsWith('<')) {
+        throw new Error('HTML response instead of JSON');
+      }
+      
+      return await JSON.parse(responseText);
     } catch (error) {
       if (retryCount < VideoDataService.MAX_RETRIES) {
-        console.log(`[VideoDataService] Transcript fetch failed, retrying in ${VideoDataService.RETRY_DELAY}ms`);
         await new Promise(resolve => setTimeout(resolve, VideoDataService.RETRY_DELAY));
         return this.fetchTranscriptWithRetry(baseUrl, retryCount + 1);
       }
@@ -91,7 +148,176 @@ export class VideoDataService {
     }
   }
 
-  private async fetchTranscript(playerResponse: any): Promise<string> {
+  private async findTranscriptButton(): Promise<Element | null> {
+    const selectors = [
+      'button[aria-label*="transcript" i]',
+      'button[aria-label*="Show transcript"]',
+      'button[aria-label*="Hide transcript"]',
+      'button[aria-label*="Transcript"]',
+      '[role="button"][aria-label*="transcript" i]',
+      '.ytd-transcript-footer-renderer button',
+      'yt-button-renderer[aria-label*="transcript" i]',
+      'ytd-menu-service-item-renderer[aria-label*="transcript" i]',
+      'button[aria-label*="transkript" i]',
+      'button[aria-label*="transcription" i]',
+      'button[data-tooltip-text*="transcript" i]'
+    ];
+    
+    for (const selector of selectors) {
+      const button = document.querySelector(selector);
+      if (button) {
+        return button;
+      }
+    }
+    
+    // Check more actions menu
+    const moreButton = document.querySelector('#top-level-buttons-computed button[aria-label*="More actions"], ytd-menu-renderer button[aria-label*="More actions"], button[aria-label*="More actions"]');
+    if (moreButton) {
+      (moreButton as HTMLElement).click();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const menuItems = document.querySelectorAll('ytd-menu-service-item-renderer, tp-yt-paper-item');
+      for (const item of menuItems) {
+        const text = item.textContent?.toLowerCase() || '';
+        if (text.includes('transcript') || text.includes('transkript') || text.includes('transcription')) {
+          return item;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  private async extractTranscriptFromUI(): Promise<string> {
+    const transcriptButton = await this.findTranscriptButton();
+    if (!transcriptButton) {
+      throw new DataAccessVideoDataError('No transcript button found');
+    }
+    
+    // Click the transcript button
+    (transcriptButton as HTMLElement).click();
+    
+    // Wait for transcript panel to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Try to find transcript content in various containers
+    const transcriptSelectors = [
+      '.ytd-transcript-segment-renderer',
+      '.ytd-transcript-segment-list-renderer .segment',
+      '#transcript .segment',
+      '.transcript-text',
+      '.ytd-transcript-renderer .segment',
+      '[data-testid="transcript-segment"]'
+    ];
+    
+    for (const selector of transcriptSelectors) {
+      const segments = document.querySelectorAll(selector);
+      if (segments.length > 0) {
+        const lines = Array.from(segments).map((segment, index) => {
+          const timeElement = segment.querySelector('.timestamp, .time, [data-start]');
+          const textElement = segment.querySelector('.text, .transcript-text') || segment;
+          
+          const timeText = timeElement?.textContent?.trim() || `${Math.floor(index * 10 / 60)}:${(index * 10) % 60}`;
+          const text = textElement?.textContent?.trim() || '';
+          
+          return text ? `${timeText} - ${text}` : '';
+        }).filter(line => line);
+        
+        if (lines.length > 0) {
+          return lines.join('\n');
+        }
+      }
+    }
+    
+    // If structured segments not found, try to get all text from transcript container
+    const transcriptContainer = document.querySelector('.ytd-transcript-renderer, #transcript, .transcript-container');
+    if (transcriptContainer) {
+      const text = transcriptContainer.textContent?.trim() || '';
+      if (text.length > 100) {
+        return text;
+      }
+    }
+    
+    throw new DataAccessVideoDataError('Could not extract transcript from UI');
+  }
+
+  private async fetchTranscriptFromDOM(videoId: string): Promise<string> {
+    // First try UI-based extraction
+    try {
+      return await this.extractTranscriptFromUI();
+    } catch (uiError) {
+      // Fallback to legacy script tag extraction
+    }
+    
+    // Fallback to script tag extraction (legacy method)
+    const scriptTags = document.querySelectorAll('script');
+    for (const script of scriptTags) {
+      const content = script.textContent || '';
+      
+      if (content.includes('captionTracks') && content.includes(videoId)) {
+        try {
+          const match = content.match(/ytInitialPlayerResponse\s*=\s*({[\s\S]+?})\s*;/);
+          if (match) {
+            const playerResponse = JSON.parse(match[1]);
+            if (playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks) {
+              const tracks = playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
+              tracks.sort(this.compareTracks);
+              const transcript = await this.fetchTranscriptWithRetry(tracks[0].baseUrl);
+              
+              if (transcript.events) {
+                const lines = transcript.events
+                  .filter((event: any) => event.segs)
+                  .map((event: any) => {
+                    const startTimeMs = event.tStartMs || 0;
+                    const startTime = this.formatTime(startTimeMs);
+                    const text = event.segs
+                      .map((seg: any) => seg.utf8)
+                      .join('')
+                      .trim();
+                    return { startTime, text };
+                  })
+                  .filter((line: any) => line.text);
+
+                return lines.map((line: any) => `${line.startTime} - ${line.text}`).join('\n');
+              }
+            }
+          }
+        } catch (error) {
+          continue;
+        }
+      }
+    }
+    
+    throw new DataAccessVideoDataError('Could not extract transcript from DOM or UI');
+  }
+
+  private processNewAPITranscript(segments: any[]): string {
+    const lines = segments.map((segmentWrapper: any) => {
+      const segment = segmentWrapper.transcriptSegmentRenderer;
+      if (!segment) return null;
+      
+      const startMs = parseInt(segment.startMs) || 0;
+      const startTime = this.formatTime(startMs);
+      const text = segment.snippet?.runs?.[0]?.text || '';
+      
+      return text ? `${startTime} - ${text.trim()}` : null;
+    }).filter(line => line);
+
+    return lines.join('\n');
+  }
+
+  private async fetchTranscript(playerResponse: any, videoId: string): Promise<string> {
+    // First try the new YouTube API
+    try {
+      const newAPIResult = await this.fetchTranscriptWithNewAPI(videoId);
+      if (newAPIResult.segments) {
+        return this.processNewAPITranscript(newAPIResult.segments);
+      }
+    } catch (newAPIError) {
+      // Continue to fallback methods
+    }
+
+    // Fallback to old method
     if (!playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks) {
       throw new NoCaptionsVideoDataError();
     }
@@ -102,10 +328,6 @@ export class VideoDataService {
     }
 
     tracks.sort(this.compareTracks);
-    console.log(`[VideoDataService] Selected caption track:`, {
-      languageCode: tracks[0].languageCode,
-      kind: tracks[0].kind
-    });
     
     try {
       const transcript = await this.fetchTranscriptWithRetry(tracks[0].baseUrl);
@@ -127,7 +349,6 @@ export class VideoDataService {
         })
         .filter((line: any) => line.text);
 
-      console.log(`[VideoDataService] Processed transcript lines:`, lines.length);
       return lines.map((line: any) => `${line.startTime} - ${line.text}`).join('\n');
     } catch (error) {
       if (error instanceof VideoDataError) {
@@ -151,9 +372,12 @@ export class VideoDataService {
   private async fetchPlayerResponseFromHTML(videoId: string): Promise<any> {
     let response: Response;
     try {
-      response = await fetch('https://www.youtube.com/watch?v=' + videoId, {
-        credentials: 'include'
-      });
+      // Try both with and without credentials
+      response = await fetch('https://www.youtube.com/watch?v=' + videoId, { credentials: 'omit' });
+      if (!response.ok) {
+        console.log(`[VideoDataService] Retrying HTML fetch with credentials included`);
+        response = await fetch('https://www.youtube.com/watch?v=' + videoId, { credentials: 'include' });
+      }
     } catch (error) {
       // If network fails
       throw new DataAccessVideoDataError('Network error');
@@ -199,7 +423,16 @@ export class VideoDataService {
 
       console.log(`[VideoDataService] Got video details:`, { title, descriptionLength: description.length });
 
-      const transcript = await this.fetchTranscript(playerResponse);
+      let transcript: string;
+      try {
+        transcript = await this.fetchTranscript(playerResponse, videoId);
+      } catch (transcriptError) {
+        try {
+          transcript = await this.fetchTranscriptFromDOM(videoId);
+        } catch (domError) {
+          throw transcriptError; // Throw original error
+        }
+      }
 
       return {
         videoId,
@@ -283,10 +516,8 @@ export class VideoDataService {
         expiresAt: Date.now() + VideoDataService.CACHE_DURATION
       });
 
-      if (videoId === videoId) {
-        this.currentVideoData = videoData;
-        this.isInitialDataFetch = false;
-      }
+      this.currentVideoData = videoData;
+      this.isInitialDataFetch = false;
 
       this.logCacheStatus(videoId, 'Successfully cached video data');
       return videoData;

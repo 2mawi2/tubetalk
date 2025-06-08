@@ -29,10 +29,15 @@ describe('VideoDataService', () => {
     videoDataService.resetState();
     originalWindowYt = (window as any).ytInitialPlayerResponse;
     delete (window as any).ytInitialPlayerResponse;
+    
+    // Mock the new API method to always fail for consistent test behavior
+    const fetchTranscriptWithNewAPISpy = vi.spyOn(videoDataService as any, 'fetchTranscriptWithNewAPI');
+    fetchTranscriptWithNewAPISpy.mockRejectedValue(new Error('New API failed'));
   });
 
   afterEach(() => {
     (window as any).ytInitialPlayerResponse = originalWindowYt;
+    vi.restoreAllMocks();
   });
 
   it('should use ytInitialPlayerResponse from window if available and matching videoId', async () => {
@@ -53,13 +58,14 @@ describe('VideoDataService', () => {
       }
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    // Mock legacy API to succeed
+    global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
+      text: () => Promise.resolve(JSON.stringify({
         events: [
           { tStartMs: 0, segs: [{ utf8: 'Hello from window' }] }
         ]
-      })
+      }))
     });
 
     const data = await videoDataService.fetchVideoData('test-window');
@@ -100,20 +106,90 @@ describe('VideoDataService', () => {
         ok: true,
         text: () => Promise.resolve(htmlResponse)
       })
-      // Fetching transcript
+      // Fetching transcript (legacy API)
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
+        text: () => Promise.resolve(JSON.stringify({
           events: [
             { tStartMs: 0, segs: [{ utf8: 'Hello from html' }] }
           ]
-        })
+        }))
       });
 
     const data = await videoDataService.fetchVideoData('test-html');
     expect(data.title).toBe('HTML Video');
     expect(data.description).toBe('HTML Desc');
     expect(data.transcript).toContain('Hello from html');
+  });
+
+  it('should use new YouTube API when available', async () => {
+    // Remove the default mock for this test to allow the new API to work
+    vi.restoreAllMocks();
+    
+    // Mock YouTube global config
+    (window as any).ytcfg = {
+      get: vi.fn().mockReturnValue('mock-visitor-data')
+    };
+
+    // Mock document.cookie for SAPISID
+    Object.defineProperty(document, 'cookie', {
+      writable: true,
+      value: 'SAPISID=mock-sapisid-value; other=value'
+    });
+
+    // Mock crypto.subtle for authentication
+    const mockDigest = vi.fn().mockResolvedValue(new ArrayBuffer(20));
+    Object.defineProperty(global, 'crypto', {
+      value: {
+        subtle: {
+          digest: mockDigest
+        }
+      },
+      writable: true
+    });
+
+    // Mock successful new API response
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        actions: [{
+          updateEngagementPanelAction: {
+            content: {
+              transcriptRenderer: {
+                content: {
+                  transcriptSearchPanelRenderer: {
+                    body: {
+                      transcriptSegmentListRenderer: {
+                        initialSegments: [{
+                          transcriptSegmentRenderer: {
+                            startMs: '1000',
+                            snippet: {
+                              runs: [{ text: 'Hello from new API' }]
+                            }
+                          }
+                        }]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }]
+      })
+    });
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'test-new-api',
+        title: 'New API Video',
+        shortDescription: 'New API Desc'
+      }
+    };
+
+    const data = await videoDataService.fetchVideoData('test-new-api');
+    expect(data.title).toBe('New API Video');
+    expect(data.transcript).toContain('Hello from new API');
   });
 
   it('should throw NoCaptionsVideoDataError if no captions available', async () => {
@@ -153,9 +229,9 @@ describe('VideoDataService', () => {
       }
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ events: null })
+      text: () => Promise.resolve(JSON.stringify({ events: null }))
     });
 
     await expect(videoDataService.fetchVideoData('test-fail'))
@@ -206,6 +282,10 @@ describe('Token Limit Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     videoDataService.resetState();
+    
+    // Mock the new API method to always fail for consistent test behavior
+    const fetchTranscriptWithNewAPISpy = vi.spyOn(videoDataService as any, 'fetchTranscriptWithNewAPI');
+    fetchTranscriptWithNewAPISpy.mockRejectedValue(new Error('New API failed'));
   });
 
   it('should throw TokenLimitExceededError when content exceeds token limit', async () => {
@@ -229,13 +309,13 @@ describe('Token Limit Tests', () => {
       }
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
+      text: () => Promise.resolve(JSON.stringify({
         events: [
           { tStartMs: 0, segs: [{ utf8: longTranscript }] }
         ]
-      })
+      }))
     });
 
     await expect(videoDataService.fetchVideoData('long-video'))
@@ -264,13 +344,13 @@ describe('Token Limit Tests', () => {
       }
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
+      text: () => Promise.resolve(JSON.stringify({
         events: [
           { tStartMs: 0, segs: [{ utf8: shortTranscript }] }
         ]
-      })
+      }))
     });
 
     const data = await videoDataService.fetchVideoData('short-video');
@@ -302,13 +382,13 @@ describe('Token Limit Tests', () => {
       }
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({
+      text: () => Promise.resolve(JSON.stringify({
         events: [
           { tStartMs: 0, segs: [{ utf8: transcript }] }
         ]
-      })
+      }))
     });
 
     await expect(videoDataService.fetchVideoData('fallback-test'))
