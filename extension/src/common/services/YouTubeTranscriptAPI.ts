@@ -2,6 +2,7 @@ export interface YouTubeAPIRequestConfig {
   videoId: string;
   authHeader: string;
   visitorData?: string;
+  signal?: AbortSignal;
 }
 
 export interface YouTubeAPIResponse {
@@ -37,7 +38,8 @@ export async function fetchYouTubeTranscript(config: YouTubeAPIRequestConfig): P
     method: 'POST',
     headers,
     credentials: 'include',
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: config.signal
   });
 
   if (!response.ok) {

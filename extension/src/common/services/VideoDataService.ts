@@ -33,6 +33,7 @@ export class VideoDataService {
   private currentVideoData: VideoData | null = null;
   private isInitialDataFetch = true;
   private preloadTimeout: number | null = null;
+  private activeControllers = new Map<string, AbortController>();
 
   private logCacheStatus(videoId: string, action: string, details?: string) {
     const cacheSize = this.videoDataCache.size;
@@ -79,7 +80,8 @@ export class VideoDataService {
       ?.split('=')[1];
     
     if (!sapisid) {
-      throw new Error('SAPISID cookie not found');
+      console.log('[VideoDataService] SAPISID cookie not found - user may not be logged in to YouTube');
+      throw new Error('SAPISID cookie not found - YouTube authentication required');
     }
     
     const timestamp = Math.floor(Date.now() / 1000);
@@ -96,8 +98,13 @@ export class VideoDataService {
     return `SAPISIDHASH ${timestamp}_${hashHex}`;
   }
 
-  private async fetchTranscriptWithNewAPI(videoId: string, retryCount = 0): Promise<any> {
+  private async fetchTranscriptWithNewAPI(videoId: string, signal?: AbortSignal, retryCount = 0): Promise<any> {
     try {
+      // Check if already aborted
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+
       // Get visitor data from YouTube's global state
       const visitorData = (window as any).ytcfg?.get?.('VISITOR_DATA') || '';
       
@@ -107,21 +114,34 @@ export class VideoDataService {
       return await fetchYouTubeTranscript({
         videoId,
         authHeader,
-        visitorData
+        visitorData,
+        signal
       });
     } catch (error) {
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+      
       if (retryCount < VideoDataService.MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, VideoDataService.RETRY_DELAY));
-        return this.fetchTranscriptWithNewAPI(videoId, retryCount + 1);
+        return this.fetchTranscriptWithNewAPI(videoId, signal, retryCount + 1);
       }
       throw error;
     }
   }
 
-  private async fetchTranscriptWithRetry(baseUrl: string, retryCount = 0): Promise<any> {
+  private async fetchTranscriptWithRetry(baseUrl: string, signal?: AbortSignal, retryCount = 0): Promise<any> {
     try {
+      // Check if already aborted
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+
       // Legacy API method - known to return empty responses but kept for potential future fixes
-      const transcriptResponse = await fetch(baseUrl + '&fmt=json3', { credentials: 'include' });
+      const transcriptResponse = await fetch(baseUrl + '&fmt=json3', { 
+        credentials: 'include',
+        signal 
+      });
       if (!transcriptResponse.ok) {
         throw new Error(`HTTP error! status: ${transcriptResponse.status}`);
       }
@@ -140,9 +160,13 @@ export class VideoDataService {
       
       return await JSON.parse(responseText);
     } catch (error) {
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+      
       if (retryCount < VideoDataService.MAX_RETRIES) {
         await new Promise(resolve => setTimeout(resolve, VideoDataService.RETRY_DELAY));
-        return this.fetchTranscriptWithRetry(baseUrl, retryCount + 1);
+        return this.fetchTranscriptWithRetry(baseUrl, signal, retryCount + 1);
       }
       throw error;
     }
@@ -241,17 +265,30 @@ export class VideoDataService {
     throw new DataAccessVideoDataError('Could not extract transcript from UI');
   }
 
-  private async fetchTranscriptFromDOM(videoId: string): Promise<string> {
+  private async fetchTranscriptFromDOM(videoId: string, signal?: AbortSignal): Promise<string> {
+    // Check if already aborted
+    if (signal?.aborted) {
+      throw new Error('Request aborted');
+    }
+
     // First try UI-based extraction
     try {
       return await this.extractTranscriptFromUI();
     } catch (uiError) {
+      // Check again before fallback
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
       // Fallback to legacy script tag extraction
     }
     
     // Fallback to script tag extraction (legacy method)
     const scriptTags = document.querySelectorAll('script');
     for (const script of scriptTags) {
+      if (signal?.aborted) {
+        throw new Error('Request aborted');
+      }
+      
       const content = script.textContent || '';
       
       if (content.includes('captionTracks') && content.includes(videoId)) {
@@ -262,7 +299,7 @@ export class VideoDataService {
             if (playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks) {
               const tracks = playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
               tracks.sort(this.compareTracks);
-              const transcript = await this.fetchTranscriptWithRetry(tracks[0].baseUrl);
+              const transcript = await this.fetchTranscriptWithRetry(tracks[0].baseUrl, signal);
               
               if (transcript.events) {
                 const lines = transcript.events
@@ -306,56 +343,136 @@ export class VideoDataService {
     return lines.join('\n');
   }
 
-  private async fetchTranscript(playerResponse: any, videoId: string): Promise<string> {
-    // First try the new YouTube API
-    try {
-      const newAPIResult = await this.fetchTranscriptWithNewAPI(videoId);
-      if (newAPIResult.segments) {
-        return this.processNewAPITranscript(newAPIResult.segments);
-      }
-    } catch (newAPIError) {
-      // Continue to fallback methods
-    }
-
-    // Fallback to old method
-    if (!playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks) {
-      throw new NoCaptionsVideoDataError();
-    }
-
-    const tracks = playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks;
-    if (!tracks || tracks.length === 0) {
-      throw new NoCaptionsVideoDataError();
-    }
-
-    tracks.sort(this.compareTracks);
+  private async fetchTranscriptRace(playerResponse: any, videoId: string): Promise<string> {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const startTime = Date.now();
     
-    try {
-      const transcript = await this.fetchTranscriptWithRetry(tracks[0].baseUrl);
+    // Register controller for cancellation
+    this.activeControllers.set(videoId, controller);
 
-      if (!transcript.events) {
-        throw new DataAccessVideoDataError();
-      }
-
-      const lines = transcript.events
-        .filter((event: any) => event.segs)
-        .map((event: any) => {
-          const startTimeMs = event.tStartMs || 0;
-          const startTime = this.formatTime(startTimeMs);
-          const text = event.segs
-            .map((seg: any) => seg.utf8)
-            .join('')
-            .trim();
-          return { startTime, text };
-        })
-        .filter((line: any) => line.text);
-
-      return lines.map((line: any) => `${line.startTime} - ${line.text}`).join('\n');
-    } catch (error) {
-      if (error instanceof VideoDataError) {
+    // Helper to create a promise that rejects when aborted
+    const createAbortablePromise = async (
+      fetchFn: () => Promise<string>,
+      methodName: string
+    ): Promise<string> => {
+      try {
+        console.log(`[VideoDataService] Starting ${methodName} attempt`);
+        const result = await fetchFn();
+        const elapsed = Date.now() - startTime;
+        console.log(`[VideoDataService] ${methodName} succeeded in ${elapsed}ms`);
+        return result;
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+        if (signal.aborted || (error as Error).message === 'Request aborted') {
+          console.log(`[VideoDataService] ${methodName} aborted after ${elapsed}ms`);
+          throw new Error('Request aborted');
+        }
+        console.log(`[VideoDataService] ${methodName} failed after ${elapsed}ms:`, error);
         throw error;
       }
-      throw new DataAccessVideoDataError();
+    };
+
+    // Prepare all transcript fetch methods
+    const promises: Promise<string>[] = [];
+
+    // Method 1: New YouTube API
+    promises.push(
+      createAbortablePromise(async () => {
+        const result = await this.fetchTranscriptWithNewAPI(videoId, signal);
+        if (result.segments) {
+          return this.processNewAPITranscript(result.segments);
+        }
+        throw new Error('No segments in new API response');
+      }, 'New YouTube API')
+    );
+
+    // Method 2: Legacy API (if caption tracks available)
+    const tracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (tracks && tracks.length > 0) {
+      const sortedTracks = [...tracks].sort(this.compareTracks.bind(this));
+      
+      promises.push(
+        createAbortablePromise(async () => {
+          const transcript = await this.fetchTranscriptWithRetry(sortedTracks[0].baseUrl, signal);
+          
+          if (!transcript.events) {
+            throw new DataAccessVideoDataError('No events in legacy API response');
+          }
+
+          const lines = transcript.events
+            .filter((event: any) => event.segs)
+            .map((event: any) => {
+              const startTimeMs = event.tStartMs || 0;
+              const startTime = this.formatTime(startTimeMs);
+              const text = event.segs
+                .map((seg: any) => seg.utf8)
+                .join('')
+                .trim();
+              return { startTime, text };
+            })
+            .filter((line: any) => line.text);
+
+          return lines.map((line: any) => `${line.startTime} - ${line.text}`).join('\n');
+        }, 'Legacy API')
+      );
     }
+
+    // Method 3: DOM extraction
+    promises.push(
+      createAbortablePromise(
+        () => this.fetchTranscriptFromDOM(videoId, signal),
+        'DOM extraction'
+      )
+    );
+
+    // Implement proper "first success wins" pattern
+    return new Promise((resolve, reject) => {
+      let completedCount = 0;
+      let hasResolved = false;
+      const errors: Error[] = [];
+
+      const cleanup = () => {
+        controller.abort();
+        this.activeControllers.delete(videoId);
+      };
+
+      promises.forEach((promise) => {
+        promise
+          .then((result) => {
+            if (!hasResolved) {
+              hasResolved = true;
+              const totalElapsed = Date.now() - startTime;
+              console.log(`[VideoDataService] Transcript fetched successfully in ${totalElapsed}ms`);
+              cleanup();
+              resolve(result);
+            }
+          })
+          .catch((error) => {
+            errors.push(error);
+            completedCount++;
+
+            // If all promises have completed and none succeeded
+            if (completedCount === promises.length && !hasResolved) {
+              const totalElapsed = Date.now() - startTime;
+              console.log(`[VideoDataService] All transcript methods failed after ${totalElapsed}ms`);
+              cleanup();
+
+              // Check if we have no captions at all
+              if (!playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks || 
+                  playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks.length === 0) {
+                reject(new NoCaptionsVideoDataError());
+              } else {
+                reject(new DataAccessVideoDataError('All transcript fetch methods failed'));
+              }
+            }
+          });
+      });
+    });
+  }
+
+  private async fetchTranscript(playerResponse: any, videoId: string): Promise<string> {
+    return this.fetchTranscriptRace(playerResponse, videoId);
   }
 
   private getPlayerResponseFromWindow(videoId: string): any | null {
@@ -423,16 +540,7 @@ export class VideoDataService {
 
       console.log(`[VideoDataService] Got video details:`, { title, descriptionLength: description.length });
 
-      let transcript: string;
-      try {
-        transcript = await this.fetchTranscript(playerResponse, videoId);
-      } catch (transcriptError) {
-        try {
-          transcript = await this.fetchTranscriptFromDOM(videoId);
-        } catch (domError) {
-          throw transcriptError; // Throw original error
-        }
-      }
+      const transcript = await this.fetchTranscript(playerResponse, videoId);
 
       return {
         videoId,
@@ -553,6 +661,7 @@ export class VideoDataService {
 
   public resetState(): void {
     this.logCacheStatus('', 'Resetting state');
+    this.cancelAllRequests();
     this.currentVideoData = null;
     this.isInitialDataFetch = true;
     this.videoDataRequests.clear();
@@ -566,6 +675,23 @@ export class VideoDataService {
   public clearCache(): void {
     this.logCacheStatus('', 'Clearing cache');
     this.videoDataCache.clear();
+  }
+
+  public cancelVideoDataRequest(videoId: string): void {
+    const controller = this.activeControllers.get(videoId);
+    if (controller) {
+      controller.abort();
+      this.activeControllers.delete(videoId);
+      console.log(`[VideoDataService] Cancelled request for video: ${videoId}`);
+    }
+  }
+
+  public cancelAllRequests(): void {
+    for (const [videoId, controller] of this.activeControllers) {
+      controller.abort();
+      console.log(`[VideoDataService] Cancelled request for video: ${videoId}`);
+    }
+    this.activeControllers.clear();
   }
 }
 

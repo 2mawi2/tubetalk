@@ -2,12 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { videoDataService } from './VideoDataService';
 import { NoCaptionsVideoDataError, DataAccessVideoDataError, TokenLimitExceededError } from '../errors/VideoDataError';
 import { getEncoding } from 'js-tiktoken';
+import * as YouTubeTranscriptAPI from './YouTubeTranscriptAPI';
 
 // Mock js-tiktoken
 vi.mock('js-tiktoken', () => ({
   getEncoding: vi.fn(() => ({
     encode: vi.fn((text) => new Array(text.length)), // Mock that returns array with length equal to text length
   }))
+}));
+
+// Mock YouTubeTranscriptAPI
+vi.mock('./YouTubeTranscriptAPI', () => ({
+  fetchYouTubeTranscript: vi.fn()
 }));
 
 vi.mock('../translations', () => ({
@@ -30,9 +36,36 @@ describe('VideoDataService', () => {
     originalWindowYt = (window as any).ytInitialPlayerResponse;
     delete (window as any).ytInitialPlayerResponse;
     
-    // Mock the new API method to always fail for consistent test behavior
-    const fetchTranscriptWithNewAPISpy = vi.spyOn(videoDataService as any, 'fetchTranscriptWithNewAPI');
-    fetchTranscriptWithNewAPISpy.mockRejectedValue(new Error('New API failed'));
+    // Mock document.cookie for SAPISID
+    Object.defineProperty(document, 'cookie', {
+      writable: true,
+      value: 'SAPISID=mock-sapisid-value; other=value'
+    });
+    
+    // Mock crypto.subtle for authentication
+    Object.defineProperty(global, 'crypto', {
+      value: {
+        subtle: {
+          digest: vi.fn().mockResolvedValue(new ArrayBuffer(20))
+        }
+      },
+      writable: true
+    });
+    
+    // Mock window.ytcfg
+    (window as any).ytcfg = {
+      get: vi.fn().mockReturnValue('mock-visitor-data')
+    };
+    
+    // Mock new API to fail by default - tests can override this
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockRejectedValue(
+      new Error('New API failed')
+    );
+    
+    // Mock DOM extraction to fail by default - it's hard to test in unit tests
+    vi.spyOn(videoDataService as any, 'fetchTranscriptFromDOM').mockRejectedValue(
+      new Error('DOM extraction failed')
+    );
   });
 
   afterEach(() => {
@@ -41,6 +74,7 @@ describe('VideoDataService', () => {
   });
 
   it('should use ytInitialPlayerResponse from window if available and matching videoId', async () => {
+
     (window as any).ytInitialPlayerResponse = {
       videoDetails: {
         videoId: 'test-window',
@@ -75,6 +109,7 @@ describe('VideoDataService', () => {
   });
 
   it('should fallback to fetching HTML if window data is not set', async () => {
+
     const htmlResponse = `
       <html>
         <body>
@@ -123,60 +158,16 @@ describe('VideoDataService', () => {
   });
 
   it('should use new YouTube API when available', async () => {
-    // Remove the default mock for this test to allow the new API to work
-    vi.restoreAllMocks();
-    
-    // Mock YouTube global config
-    (window as any).ytcfg = {
-      get: vi.fn().mockReturnValue('mock-visitor-data')
-    };
-
-    // Mock document.cookie for SAPISID
-    Object.defineProperty(document, 'cookie', {
-      writable: true,
-      value: 'SAPISID=mock-sapisid-value; other=value'
-    });
-
-    // Mock crypto.subtle for authentication
-    const mockDigest = vi.fn().mockResolvedValue(new ArrayBuffer(20));
-    Object.defineProperty(global, 'crypto', {
-      value: {
-        subtle: {
-          digest: mockDigest
-        }
-      },
-      writable: true
-    });
-
     // Mock successful new API response
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({
-        actions: [{
-          updateEngagementPanelAction: {
-            content: {
-              transcriptRenderer: {
-                content: {
-                  transcriptSearchPanelRenderer: {
-                    body: {
-                      transcriptSegmentListRenderer: {
-                        initialSegments: [{
-                          transcriptSegmentRenderer: {
-                            startMs: '1000',
-                            snippet: {
-                              runs: [{ text: 'Hello from new API' }]
-                            }
-                          }
-                        }]
-                      }
-                    }
-                  }
-                }
-              }
-            }
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockResolvedValueOnce({
+      segments: [{
+        transcriptSegmentRenderer: {
+          startMs: '1000',
+          snippet: {
+            runs: [{ text: 'Hello from new API' }]
           }
-        }]
-      })
+        }
+      }]
     });
 
     (window as any).ytInitialPlayerResponse = {
@@ -193,6 +184,7 @@ describe('VideoDataService', () => {
   });
 
   it('should throw NoCaptionsVideoDataError if no captions available', async () => {
+
     (window as any).ytInitialPlayerResponse = {
       videoDetails: {
         videoId: 'no-captions',
@@ -212,6 +204,7 @@ describe('VideoDataService', () => {
   });
 
   it('should throw DataAccessVideoDataError if transcript events are null', async () => {
+
     (window as any).ytInitialPlayerResponse = {
       videoDetails: {
         videoId: 'test-fail',
@@ -249,6 +242,7 @@ describe('VideoDataService', () => {
   });
 
   it('should handle YouTube returning HTML instead of JSON for transcript (logged-in user issue)', async () => {
+
     (window as any).ytInitialPlayerResponse = {
       videoDetails: {
         videoId: 'html-transcript-response',
@@ -266,10 +260,10 @@ describe('VideoDataService', () => {
       }
     };
 
-    
+    // Mock legacy API returning HTML
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON at position 0')) 
+      text: () => Promise.resolve('<html>Login required</html>')
     });
 
     await expect(videoDataService.fetchVideoData('html-transcript-response'))
@@ -283,9 +277,15 @@ describe('Token Limit Tests', () => {
     vi.clearAllMocks();
     videoDataService.resetState();
     
-    // Mock the new API method to always fail for consistent test behavior
-    const fetchTranscriptWithNewAPISpy = vi.spyOn(videoDataService as any, 'fetchTranscriptWithNewAPI');
-    fetchTranscriptWithNewAPISpy.mockRejectedValue(new Error('New API failed'));
+    // Mock new API to fail by default in token limit tests
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockRejectedValue(
+      new Error('New API failed')
+    );
+    
+    // Mock DOM extraction to fail by default
+    vi.spyOn(videoDataService as any, 'fetchTranscriptFromDOM').mockRejectedValue(
+      new Error('DOM extraction failed')
+    );
   });
 
   it('should throw TokenLimitExceededError when content exceeds token limit', async () => {
@@ -394,5 +394,347 @@ describe('Token Limit Tests', () => {
     await expect(videoDataService.fetchVideoData('fallback-test'))
       .rejects
       .toThrow(TokenLimitExceededError);
+  });
+});
+
+describe('Parallel Transcript Fetching', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    videoDataService.resetState();
+    
+    // Mock document.cookie for SAPISID
+    Object.defineProperty(document, 'cookie', {
+      writable: true,
+      value: 'SAPISID=mock-sapisid-value; other=value'
+    });
+    
+    // Mock crypto.subtle for authentication
+    Object.defineProperty(global, 'crypto', {
+      value: {
+        subtle: {
+          digest: vi.fn().mockResolvedValue(new ArrayBuffer(20))
+        }
+      },
+      writable: true
+    });
+    
+    // Mock window.ytcfg
+    (window as any).ytcfg = {
+      get: vi.fn().mockReturnValue('mock-visitor-data')
+    };
+    
+    // Mock DOM extraction to fail by default - it's hard to test in unit tests
+    vi.spyOn(videoDataService as any, 'fetchTranscriptFromDOM').mockRejectedValue(
+      new Error('DOM extraction failed')
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should race all transcript methods and use the first successful one', async () => {
+    // Set up timing for different methods
+    const newAPIDelay = 100;
+    const legacyAPIDelay = 200;
+
+    // Mock new API to succeed after delay
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, newAPIDelay));
+      return {
+        segments: [{
+          transcriptSegmentRenderer: {
+            startMs: '1000',
+            snippet: {
+              runs: [{ text: 'New API wins!' }]
+            }
+          }
+        }]
+      };
+    });
+
+    // Set up player response with caption tracks
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'race-test',
+        title: 'Race Test Video',
+        shortDescription: 'Test Description'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    // Mock legacy API to succeed after longer delay
+    global.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url.includes('captions')) {
+        await new Promise(resolve => setTimeout(resolve, legacyAPIDelay));
+        return {
+          ok: true,
+          text: () => Promise.resolve(JSON.stringify({
+            events: [
+              { tStartMs: 0, segs: [{ utf8: 'Legacy API wins!' }] }
+            ]
+          }))
+        };
+      }
+      // For HTML fetch
+      return {
+        ok: true,
+        text: () => Promise.resolve('<html></html>')
+      };
+    });
+
+    const startTime = Date.now();
+    const data = await videoDataService.fetchVideoData('race-test');
+    const elapsed = Date.now() - startTime;
+
+    // Should use new API result since it's fastest
+    expect(data.transcript).toContain('New API wins!');
+    // Should complete in approximately the new API delay time
+    expect(elapsed).toBeLessThan(legacyAPIDelay);
+  });
+
+  it('should fall back to next method if first one fails', async () => {
+    // Mock new API to fail immediately
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockRejectedValue(
+      new Error('New API failed')
+    );
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'fallback-test',
+        title: 'Fallback Test Video',
+        shortDescription: 'Test Description'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    // Mock legacy API to succeed
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({
+        events: [
+          { tStartMs: 0, segs: [{ utf8: 'Legacy API fallback success' }] }
+        ]
+      }))
+    });
+
+    const data = await videoDataService.fetchVideoData('fallback-test');
+    expect(data.transcript).toContain('Legacy API fallback success');
+  });
+
+  it('should cancel other methods when one succeeds', async () => {
+    let newAPICancelled = false;
+
+    // Mock new API to take long time but check for cancellation
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockImplementation(async (config) => {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          resolve({
+            segments: [{
+              transcriptSegmentRenderer: {
+                startMs: '1000',
+                snippet: {
+                  runs: [{ text: 'Should not see this' }]
+                }
+              }
+            }]
+          });
+        }, 1000);
+
+        // Listen for abort signal
+        config.signal?.addEventListener('abort', () => {
+          newAPICancelled = true;
+          clearTimeout(timeout);
+          reject(new Error('Request aborted'));
+        });
+      });
+    });
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'cancel-test',
+        title: 'Cancel Test Video',
+        shortDescription: 'Test Description'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    // Mock legacy API to succeed quickly
+    global.fetch = vi.fn().mockImplementation(async (url, options) => {
+      if (url.includes('captions')) {
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            resolve({
+              ok: true,
+              text: () => Promise.resolve(JSON.stringify({
+                events: [
+                  { tStartMs: 0, segs: [{ utf8: 'Legacy API quick win' }] }
+                ]
+              }))
+            });
+          }, 50);
+
+          // Listen for abort signal
+          options?.signal?.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            reject(new Error('Request aborted'));
+          });
+        });
+      }
+      return {
+        ok: true,
+        text: () => Promise.resolve('<html></html>')
+      };
+    });
+
+    const data = await videoDataService.fetchVideoData('cancel-test');
+    
+    // Legacy API should win
+    expect(data.transcript).toContain('Legacy API quick win');
+    
+    // Wait a bit to ensure cancellation propagated
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // New API should have been cancelled
+    expect(newAPICancelled).toBe(true);
+  });
+
+  it('should handle all methods failing', async () => {
+    // Mock all methods to fail
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockRejectedValue(
+      new Error('New API failed')
+    );
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'all-fail-test',
+        title: 'All Fail Test Video',
+        shortDescription: 'Test Description'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    // Mock legacy API to fail
+    global.fetch = vi.fn().mockRejectedValue(new Error('Legacy API failed'));
+
+    // Mock DOM extraction to fail (no document setup)
+    await expect(videoDataService.fetchVideoData('all-fail-test'))
+      .rejects
+      .toThrow(DataAccessVideoDataError);
+  });
+
+  it('should handle request cancellation via cancelVideoDataRequest', async () => {
+    // Mock new API to handle abort signals properly
+    vi.mocked(YouTubeTranscriptAPI.fetchYouTubeTranscript).mockImplementation(
+      (config) => new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          resolve({
+            segments: [{
+              transcriptSegmentRenderer: {
+                startMs: '1000',
+                snippet: {
+                  runs: [{ text: 'Should not see this' }]
+                }
+              }
+            }]
+          });
+        }, 5000);
+
+        // Listen for abort signal
+        config.signal?.addEventListener('abort', () => {
+          clearTimeout(timeout);
+          reject(new Error('Request aborted'));
+        });
+      })
+    );
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'cancel-request-test',
+        title: 'Cancel Request Test',
+        shortDescription: 'Test Description'
+      }
+    };
+
+    // Start the request but don't await it
+    const requestPromise = videoDataService.fetchVideoData('cancel-request-test');
+
+    // Cancel it after a short delay
+    setTimeout(() => {
+      videoDataService.cancelVideoDataRequest('cancel-request-test');
+    }, 50);
+
+    // Should throw due to cancellation
+    await expect(requestPromise).rejects.toThrow();
+  });
+
+  it('should handle missing SAPISID cookie gracefully', async () => {
+    // Remove SAPISID from cookie
+    Object.defineProperty(document, 'cookie', {
+      writable: true,
+      value: 'other=value'
+    });
+
+    (window as any).ytInitialPlayerResponse = {
+      videoDetails: {
+        videoId: 'no-auth-test',
+        title: 'No Auth Test',
+        shortDescription: 'Test Description'
+      },
+      captions: {
+        playerCaptionsTracklistRenderer: {
+          captionTracks: [{
+            baseUrl: 'https://example.com/captions',
+            languageCode: 'en',
+            kind: 'asr'
+          }]
+        }
+      }
+    };
+
+    // Legacy API should still work
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({
+        events: [
+          { tStartMs: 0, segs: [{ utf8: 'Works without auth' }] }
+        ]
+      }))
+    });
+
+    const data = await videoDataService.fetchVideoData('no-auth-test');
+    expect(data.transcript).toContain('Works without auth');
   });
 });
