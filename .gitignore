@@ -114,3 +114,6 @@ scripts/prd.md
 .cursor/rules/
 .cursor/mcp.json
 .cursorrules 
+.mcp.json
+# Para directories and state files
+.para/
