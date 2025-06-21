@@ -47,5 +47,13 @@
     "settings_model_placeholder": "Pilih model",
     "settings_add_model": "Tambah Model",
     "settings_model_duplicate": "Model ini sudah ditambahkan",
-    "rateButton": "Nilai TubeTalk"
+    "rateButton": "Nilai TubeTalk",
+    "providerSelectionLabel": "Penyedia AI",
+    "openRouterDescription": "Akses beberapa model AI",
+    "openAIDescription": "Akses langsung ke API OpenAI",
+    "authenticateWithOpenRouter": "Autentikasi dengan OpenRouter",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "Dapatkan kunci API OpenAI Anda",
+    "openAIModelSelectionLabel": "Model OpenAI",
+    "openAIModelInfo": "Tarif standar OpenAI berlaku"
 }

@@ -39,5 +39,13 @@
     "settings_model_placeholder": "Modell auswählen",
     "settings_add_model": "Modell hinzufügen",
     "settings_model_duplicate": "Dieses Modell wurde bereits hinzugefügt",
-    "rateButton": "TubeTalk bewerten"
+    "rateButton": "TubeTalk bewerten",
+    "providerSelectionLabel": "KI-Anbieter",
+    "openRouterDescription": "Zugriff auf mehrere KI-Modelle",
+    "openAIDescription": "Direkter OpenAI API-Zugriff",
+    "authenticateWithOpenRouter": "Mit OpenRouter authentifizieren",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "OpenAI API-Schlüssel holen",
+    "openAIModelSelectionLabel": "OpenAI-Modelle",
+    "openAIModelInfo": "Standard OpenAI-Tarife gelten"
 }

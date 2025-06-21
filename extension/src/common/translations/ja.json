@@ -47,5 +47,13 @@
     "settings_model_placeholder": "モデルを選択",
     "settings_add_model": "モデルを追加",
     "settings_model_duplicate": "このモデルは既に追加されています",
-    "rateButton": "TubeTalkを評価する"
+    "rateButton": "TubeTalkを評価する",
+    "providerSelectionLabel": "AIプロバイダー",
+    "openRouterDescription": "複数のAIモデルにアクセス",
+    "openAIDescription": "OpenAI API への直接アクセス",
+    "authenticateWithOpenRouter": "OpenRouterで認証",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "OpenAI APIキーを取得",
+    "openAIModelSelectionLabel": "OpenAIモデル",
+    "openAIModelInfo": "標準のOpenAI料金が適用されます"
 }

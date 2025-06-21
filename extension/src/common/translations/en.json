@@ -54,5 +54,13 @@
     "refreshToRestartMessage": "Refresh to restart",
     "startNewChatMessage": "Start new chat",
     "refreshChatMessage": "Refresh chat",
-    "settingsButtonTooltip": "Settings"
+    "settingsButtonTooltip": "Settings",
+    "providerSelectionLabel": "AI Provider",
+    "openRouterDescription": "Access multiple AI models",
+    "openAIDescription": "Direct OpenAI API access",
+    "authenticateWithOpenRouter": "Authenticate with OpenRouter",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "Get your OpenAI API key",
+    "openAIModelSelectionLabel": "OpenAI Models",
+    "openAIModelInfo": "Standard OpenAI rates apply"
 }

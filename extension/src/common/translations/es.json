@@ -50,5 +50,13 @@
     "rateButton": "Calificar TubeTalk",
     "feedbackMessage": "Mensaje de retroalimentación",
     "noContent": "Sin contenido disponible",
-    "error": "Se produjo un error"
+    "error": "Se produjo un error",
+    "providerSelectionLabel": "Proveedor de IA",
+    "openRouterDescription": "Acceso a múltiples modelos de IA",
+    "openAIDescription": "Acceso directo a la API de OpenAI",
+    "authenticateWithOpenRouter": "Autenticar con OpenRouter",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "Obtener tu clave API de OpenAI",
+    "openAIModelSelectionLabel": "Modelos de OpenAI",
+    "openAIModelInfo": "Se aplican las tarifas estándar de OpenAI"
 }

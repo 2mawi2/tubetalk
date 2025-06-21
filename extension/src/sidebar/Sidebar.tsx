@@ -68,18 +68,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const initSettings = async () => {
       try {
-        const [isDarkMode, apiKeyData, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions] = await Promise.all([
+        const [isDarkMode, apiKeyData, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions, currentProvider] = await Promise.all([
           storageAdapter.getDarkMode(),
           storageAdapter.getApiKey(),
           storageAdapter.getShowSponsored(),
           storageAdapter.getSelectedLocale(),
           storageAdapter.getSelectedSummaryLanguage(),
-          storageAdapter.getShowSuggestedQuestions()
+          storageAdapter.getShowSuggestedQuestions(),
+          storageAdapter.getCurrentProvider()
         ]);
+
+        // Get the API key for the current provider
+        const providerApiKey = await storageAdapter.getProviderApiKey(currentProvider);
 
         const newSettings: SettingsType = {
           isDarkMode,
-          apiKey: apiKeyData.openaiApiKey || '',
+          apiKey: providerApiKey || '',
+          provider: currentProvider,
           showSponsored: showSponsoredValue,
           selectedLocale: localeData.selectedLocale || 'en',
           selectedSummaryLanguage: selectedSummaryLanguage,
@@ -160,9 +165,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         document.documentElement.setAttribute('data-theme', newSettings.isDarkMode ? 'dark' : 'light');
       }
 
+      // Handle provider change
+      if (newSettings.provider !== settings.provider) {
+        await storageAdapter.setCurrentProvider(newSettings.provider);
+        // Save the API key to the new provider's storage
+        if (newSettings.apiKey) {
+          await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
+        }
+      } else if (newSettings.apiKey !== settings.apiKey) {
+        // Just API key changed, save it to current provider
+        await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
+      }
+
       await Promise.all([
         storageAdapter.setDarkMode(newSettings.isDarkMode),
-        storageAdapter.setApiKey(newSettings.apiKey),
         storageAdapter.setShowSponsored(newSettings.showSponsored),
         storageAdapter.setSelectedLocale(newSettings.selectedLocale),
         storageAdapter.setSelectedSummaryLanguage(newSettings.selectedSummaryLanguage),

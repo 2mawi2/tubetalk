@@ -20,6 +20,7 @@
   
   // Button colors
   --button-primary-background: #4285F4;
+  --button-primary-background-rgb: 66, 133, 244;
   --button-primary-text: #ffffff;
   --button-primary-hover: #3367D6;
   --button-shadow: rgba(66, 133, 244, 0.2);
@@ -56,6 +57,17 @@
   // Message colors
   --message-assistant-background: #f8f9fa;
   --message-user-background: #4285F4;
+  
+  // Scrollbar colors
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #cccccc;
+  
+  // Error colors
+  --error-color: #dc3545;
+  --error-bg-color: rgba(220, 53, 69, 0.1);
+  
+  // Input RGB values
+  --input-background-rgb: 255, 255, 255;
 }
 
 [data-theme="dark"] {
@@ -76,6 +88,7 @@
   --input-focus-border: #4285F4;
   
   --button-primary-background: #4285F4;
+  --button-primary-background-rgb: 66, 133, 244;
   --button-primary-text: #ffffff;
   --button-primary-hover: #3367D6;
   --button-shadow: rgba(66, 133, 244, 0.2);
@@ -105,4 +118,15 @@
   // Message colors
   --message-assistant-background: #303030;
   --message-user-background: #4285F4;
+  
+  // Scrollbar colors (dark mode)
+  --scrollbar-track: #303030;
+  --scrollbar-thumb: #555555;
+  
+  // Error colors (dark mode)
+  --error-color: #dc3545;
+  --error-bg-color: rgba(220, 53, 69, 0.1);
+  
+  // Input RGB values (dark mode)
+  --input-background-rgb: 48, 48, 48;
 } 

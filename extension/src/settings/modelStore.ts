@@ -3,6 +3,8 @@ import { DEFAULT_MODEL, settingsStorageAdapter } from './settingsStorageAdapter'
 import type { OpenRouterModel } from '../common/adapters/ApiAdapter'
 import type { ApiAdapter } from '../common/adapters/ApiAdapter'
 import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter'
+import { OpenAIApiAdapter } from '../common/adapters/OpenAIApiAdapter'
+import type { ProviderType } from '../storage/types'
 
 type ErrorState = { message: string } | null
 
@@ -12,8 +14,13 @@ export class ModelStore {
   error: ErrorState = null
   inputError: boolean = false
   isLoading: boolean = false
+  currentProvider: ProviderType = 'openrouter'
+  private openRouterAdapter: ApiAdapter | null = null
+  private openAIAdapter: ApiAdapter | null = null
+  private openRouterApiKey: string | null = null
+  private openAIApiKey: string | null = null
 
-  constructor(private apiAdapter: ApiAdapter) {
+  constructor() {
     makeAutoObservable(this)
   }
 
@@ -24,6 +31,9 @@ export class ModelStore {
   }
 
   formatPrice(model: OpenRouterModel): string {
+    if (this.currentProvider === 'openai') {
+      return 'Standard rates'
+    }
     const prompt = parseFloat(model.pricing.prompt)
     const completion = parseFloat(model.pricing.completion)
     const total = (prompt + completion) * 1000000 // Convert to per million tokens
@@ -62,7 +72,12 @@ export class ModelStore {
   async fetchAvailableModels() {
     this.isLoading = true
     try {
-      const models = await this.apiAdapter.fetchAvailableModels()
+      const adapter = await this.getCurrentAdapter()
+      if (!adapter) {
+        throw new Error('No API adapter available')
+      }
+      
+      const models = await adapter.fetchAvailableModels()
       runInAction(() => {
         this.availableModels = models
         this.isLoading = false
@@ -127,18 +142,55 @@ export class ModelStore {
       this.inputError = false
     })
   }
+
+  async setProvider(provider: ProviderType) {
+    runInAction(() => {
+      this.currentProvider = provider
+      this.availableModels = [] // Clear models when switching providers
+    })
+    // Fetch models for the new provider
+    await this.fetchAvailableModels()
+  }
+
+  async getCurrentAdapter(): Promise<ApiAdapter | null> {
+    // Get storage adapter to access provider-specific API keys
+    const storageAdapter = (await import('../storage/storageAdapter')).storageAdapter;
+    
+    if (this.currentProvider === 'openrouter') {
+      const apiKey = await storageAdapter.getProviderApiKey('openrouter');
+      if (!apiKey) return null;
+      
+      if (!this.openRouterAdapter || this.openRouterApiKey !== apiKey) {
+        this.openRouterAdapter = new OpenRouterApiAdapter(apiKey, () => Promise.resolve(this.models));
+        this.openRouterApiKey = apiKey;
+      }
+      return this.openRouterAdapter;
+    } else {
+      const apiKey = await storageAdapter.getProviderApiKey('openai');
+      if (!apiKey) return null;
+      
+      if (!this.openAIAdapter || this.openAIApiKey !== apiKey) {
+        this.openAIAdapter = new OpenAIApiAdapter(apiKey);
+        this.openAIApiKey = apiKey;
+      }
+      return this.openAIAdapter;
+    }
+  }
+
+  async updateApiKey(provider: ProviderType, apiKey: string) {
+    if (provider === 'openrouter') {
+      this.openRouterAdapter = new OpenRouterApiAdapter(apiKey, () => Promise.resolve(this.models))
+      this.openRouterApiKey = apiKey
+    } else {
+      this.openAIAdapter = new OpenAIApiAdapter(apiKey)
+      this.openAIApiKey = apiKey
+    }
+    // Refresh models when API key changes
+    if (this.currentProvider === provider) {
+      await this.fetchAvailableModels()
+    }
+  }
 }
 
-// Create the store first
-let modelStore: ModelStore
-
-// Then create the adapter with a function that accesses the store
-const apiAdapter = new OpenRouterApiAdapter(
-  '', // The API key will be set later
-  async () => modelStore ? modelStore.models : [DEFAULT_MODEL]
-)
-
-// Finally, instantiate the store with the adapter
-modelStore = new ModelStore(apiAdapter)
-
-export { modelStore } 
+// Create a singleton instance
+export const modelStore = new ModelStore() 

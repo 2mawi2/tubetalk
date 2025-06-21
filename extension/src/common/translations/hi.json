@@ -47,5 +47,13 @@
     "settings_model_placeholder": "मॉडल चुनें",
     "settings_add_model": "मॉडल जोड़ें",
     "settings_model_duplicate": "यह मॉडल पहले से जोड़ा जा चुका है",
-    "rateButton": "TubeTalk को रेट करें"
+    "rateButton": "TubeTalk को रेट करें",
+    "providerSelectionLabel": "AI प्रदाता",
+    "openRouterDescription": "कई AI मॉडल तक पहुंच",
+    "openAIDescription": "प्रत्यक्ष OpenAI API पहुंच",
+    "authenticateWithOpenRouter": "OpenRouter के साथ प्रमाणित करें",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "अपनी OpenAI API कुंजी प्राप्त करें",
+    "openAIModelSelectionLabel": "OpenAI मॉडल",
+    "openAIModelInfo": "मानक OpenAI दरें लागू होती हैं"
 }
