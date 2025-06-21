@@ -2,7 +2,7 @@
 import type { StorageAdapter, ProviderType, ProviderConfig, ProvidersConfig } from './types';
 
 export const DEFAULT_VALUES = {
-  MODEL_PREFERENCES: ["gpt-4o", "gpt-4o-mini"] as string[],
+  MODEL_PREFERENCES: ["gpt-4.1", "gpt-4o-mini"] as string[],
   DARK_MODE: true,
   SHOW_SPONSORED: true,
   INCLUDE_TIMESTAMP: false,
@@ -14,11 +14,11 @@ export const DEFAULT_VALUES = {
 export const DEFAULT_PROVIDERS: ProvidersConfig = {
   openrouter: {
     apiKey: null,
-    modelPreferences: ["gpt-4o", "gpt-4o-mini"]
+    modelPreferences: ["gpt-4.1", "gpt-4o-mini"]
   },
   openai: {
     apiKey: null,
-    modelPreferences: ["gpt-4o", "gpt-4o-mini"]
+    modelPreferences: ["gpt-4.1", "gpt-4o-mini"]
   }
 };
 
@@ -134,16 +134,9 @@ const storageAdapter: StorageAdapter = {
       
       if (legacyApiKey || legacyCustomModels.length > 0) {
         // Determine model preferences - use custom models if available, else legacy model prefs
-        // Also migrate old model names to new ones
-        const migrateModelName = (model: string) => {
-          if (model === "openai/gpt-4.1" || model === "gpt-4.1") return "gpt-4o";
-          if (model === "openai/gpt-4o-mini") return "gpt-4o-mini";
-          return model;
-        };
-        
         const modelsToMigrate = legacyCustomModels.length > 0 
-          ? ["gpt-4o", ...legacyCustomModels.filter((m: string) => m !== "openai/gpt-4.1").map(migrateModelName)]
-          : legacyModelPrefs.map(migrateModelName);
+          ? ["gpt-4.1", ...legacyCustomModels.filter((m: string) => m !== "openai/gpt-4.1" && m !== "gpt-4.1")]
+          : legacyModelPrefs;
         
         // Initialize providers structure with legacy data migrated to openrouter
         const providers: ProvidersConfig = {

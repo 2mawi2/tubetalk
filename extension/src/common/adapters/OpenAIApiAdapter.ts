@@ -80,7 +80,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
           'o3-mini',
           'o1-preview',
           'o1-mini',
-          'gpt-4o',       // Then GPT-4 family
+          'gpt-4.1',      // Then GPT-4 family
           'gpt-4o-mini',
           'gpt-4-turbo',
           'gpt-4',
@@ -108,7 +108,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private formatModelName(modelId: string): string {
     const nameMap: Record<string, string> = {
-      'gpt-4o': 'GPT-4o',
+      'gpt-4.1': 'GPT-4.1',
       'gpt-4o-mini': 'GPT-4o Mini',
       'gpt-4-turbo': 'GPT-4 Turbo',
       'gpt-4-turbo-preview': 'GPT-4 Turbo Preview',
@@ -126,7 +126,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private getContextLength(modelId: string): number {
     const contextMap: Record<string, number> = {
-      'gpt-4o': 128000,
+      'gpt-4.1': 128000,
       'gpt-4o-mini': 128000,
       'gpt-4-turbo': 128000,
       'gpt-4-turbo-preview': 128000,
@@ -144,7 +144,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private getModelDescription(modelId: string): string {
     const descMap: Record<string, string> = {
-      'gpt-4o': 'Most capable model, optimized for speed',
+      'gpt-4.1': 'Most capable model, optimized for speed',
       'gpt-4o-mini': 'Affordable small model with GPT-4 intelligence',
       'gpt-4-turbo': 'Latest GPT-4 Turbo with vision capabilities',
       'gpt-4-turbo-preview': 'Preview of GPT-4 Turbo features',
@@ -232,8 +232,8 @@ export class OpenAIApiAdapter implements ApiAdapter {
     // Fallback list in case API is unavailable
     return [
       {
-        id: 'gpt-4o',
-        name: 'GPT-4o',
+        id: 'gpt-4.1',
+        name: 'GPT-4.1',
         context_length: 128000,
         description: 'Most capable model, optimized for speed',
         pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
@@ -299,7 +299,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: 'gpt-4o', // Default to gpt-4o
+          model: 'gpt-4.1', // Default to gpt-4.1
           messages,
           max_tokens: 3000,
           temperature: 0.1,
