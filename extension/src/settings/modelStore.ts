@@ -56,11 +56,13 @@ export class ModelStore {
       const providerModels = await storageAdapter.getProviderModelPreferences(this.currentProvider)
       
       runInAction(() => {
+        // Always ensure DEFAULT_MODEL is first in the list
+        const otherModels = providerModels.filter(m => m !== DEFAULT_MODEL);
+        
         // If we have available models, filter custom models to only valid ones
         // Otherwise, keep all models from storage (when no API key)
         if (this.availableModels.length > 0) {
-          const validCustomModels = providerModels
-            .filter(modelId => modelId !== DEFAULT_MODEL)
+          const validCustomModels = otherModels
             .filter(modelId => 
               this.availableModels.some(m => m.id === modelId) || 
               // Allow models that might be valid for this provider but not yet loaded
@@ -70,10 +72,9 @@ export class ModelStore {
           this.models = [DEFAULT_MODEL, ...validCustomModels];
         } else {
           // No available models (no API key), just use stored preferences
-          this.models = providerModels.includes(DEFAULT_MODEL) 
-            ? providerModels 
-            : [DEFAULT_MODEL, ...providerModels.filter(m => m !== DEFAULT_MODEL)];
+          this.models = [DEFAULT_MODEL, ...otherModels];
         }
+        
         this.error = null;
         this.inputError = false;
       })
