@@ -73,6 +73,91 @@ describe('Storage Migration', () => {
       expect(versionCall![0].storageVersion).toBe(2);
     });
 
+    it('should migrate custom models from old settingsStorageAdapter', async () => {
+      // Setup mock for v1 storage with custom models
+      mockChromeStorage.sync.get.mockImplementation((key, callback) => {
+        const result: Record<string, any> = {};
+        
+        if (key === 'storageVersion') {
+          result.storageVersion = undefined; // No version means v1
+        } else if (key === 'openaiApiKey') {
+          result.openaiApiKey = 'sk-test-key-123';
+        } else if (key === 'modelPreferences') {
+          result.modelPreferences = ['openai/gpt-4.1', 'openai/gpt-4o-mini'];
+        } else if (key === 'customModels') {
+          // These are the custom models from old settingsStorageAdapter
+          result.customModels = ['anthropic/claude-3-haiku', 'meta-llama/llama-3-8b'];
+        }
+        
+        callback(result);
+      });
+
+      mockChromeStorage.sync.set.mockImplementation((data, callback) => {
+        callback();
+      });
+
+      // Run migration
+      await storageAdapter.migrateStorage();
+
+      // Verify providers structure was created with custom models
+      const providersCall = mockChromeStorage.sync.set.mock.calls.find(
+        call => call[0].providers !== undefined
+      );
+      
+      expect(providersCall).toBeDefined();
+      const providers: ProvidersConfig = providersCall![0].providers;
+      
+      // Check openrouter has the migrated custom models (prioritized over legacy modelPreferences)
+      expect(providers.openrouter.apiKey).toBe('sk-test-key-123');
+      expect(providers.openrouter.modelPreferences).toEqual([
+        'openai/gpt-4.1', 
+        'anthropic/claude-3-haiku', 
+        'meta-llama/llama-3-8b'
+      ]);
+      
+      // Check openai has defaults
+      expect(providers.openai.apiKey).toBeNull();
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo']);
+    });
+
+    it('should migrate user with only custom models (no API key)', async () => {
+      // Setup mock for user who only had custom models
+      mockChromeStorage.sync.get.mockImplementation((key, callback) => {
+        const result: Record<string, any> = {};
+        
+        if (key === 'storageVersion') {
+          result.storageVersion = undefined; // No version means v1
+        } else if (key === 'customModels') {
+          result.customModels = ['anthropic/claude-3-haiku'];
+        }
+        // No API key or modelPreferences
+        
+        callback(result);
+      });
+
+      mockChromeStorage.sync.set.mockImplementation((data, callback) => {
+        callback();
+      });
+
+      // Run migration
+      await storageAdapter.migrateStorage();
+
+      // Verify providers structure was created
+      const providersCall = mockChromeStorage.sync.set.mock.calls.find(
+        call => call[0].providers !== undefined
+      );
+      
+      expect(providersCall).toBeDefined();
+      const providers: ProvidersConfig = providersCall![0].providers;
+      
+      // Check openrouter has the custom models even without API key
+      expect(providers.openrouter.apiKey).toBeNull();
+      expect(providers.openrouter.modelPreferences).toEqual([
+        'openai/gpt-4.1', 
+        'anthropic/claude-3-haiku'
+      ]);
+    });
+
     it('should initialize new user with default schema', async () => {
       // Setup mock for new user (no existing data)
       mockChromeStorage.sync.get.mockImplementation((key, callback) => {
