@@ -76,15 +76,23 @@ export class OpenAIApiAdapter implements ApiAdapter {
       // Sort by capability (latest and most capable models first)
       const sortedModels = chatModels.sort((a: OpenRouterModel, b: OpenRouterModel) => {
         const order = [
-          'o3',           // Latest reasoning models first
+          'o3-pro',       // Most advanced reasoning models
+          'o3',
           'o3-mini',
+          'o4-mini',
           'o1-preview',
           'o1-mini',
-          'gpt-4.1',      // Then GPT-4 family
+          'gpt-4.1',      // Latest GPT-4.1 family (default)
+          'gpt-4.1-mini',
+          'gpt-4.1-nano',
+          'gpt-4o-audio', // GPT-4o family
+          'gpt-4o',
+          'gpt-4o-mini-audio',
           'gpt-4o-mini',
-          'gpt-4-turbo',
+          'gpt-4-turbo',  // Legacy models (kept for compatibility)
           'gpt-4',
-          'gpt-3.5-turbo' // GPT-3.5 family last
+          'gpt-3.5-turbo',
+          'gpt-3.5-turbo-instruct'
         ];
         const aIndex = order.findIndex(prefix => a.id.startsWith(prefix));
         const bIndex = order.findIndex(prefix => b.id.startsWith(prefix));
@@ -109,16 +117,22 @@ export class OpenAIApiAdapter implements ApiAdapter {
   private formatModelName(modelId: string): string {
     const nameMap: Record<string, string> = {
       'gpt-4.1': 'GPT-4.1',
+      'gpt-4.1-mini': 'GPT-4.1 Mini',
+      'gpt-4.1-nano': 'GPT-4.1 Nano',
+      'gpt-4o': 'GPT-4o',
       'gpt-4o-mini': 'GPT-4o Mini',
+      'gpt-4o-audio': 'GPT-4o Audio',
+      'gpt-4o-mini-audio': 'GPT-4o Mini Audio',
       'gpt-4-turbo': 'GPT-4 Turbo',
-      'gpt-4-turbo-preview': 'GPT-4 Turbo Preview',
       'gpt-4': 'GPT-4',
       'gpt-3.5-turbo': 'GPT-3.5 Turbo',
-      'gpt-3.5-turbo-16k': 'GPT-3.5 Turbo 16K',
+      'gpt-3.5-turbo-instruct': 'GPT-3.5 Turbo Instruct',
       'o1-preview': 'o1 Preview',
       'o1-mini': 'o1 Mini',
       'o3-mini': 'o3 Mini',
-      'o3': 'o3'
+      'o3': 'o3',
+      'o3-pro': 'o3 Pro',
+      'o4-mini': 'o4 Mini'
     };
     
     return nameMap[modelId] || modelId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -126,17 +140,30 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private getContextLength(modelId: string): number {
     const contextMap: Record<string, number> = {
-      'gpt-4.1': 128000,
+      // GPT-4.1 family (1M context)
+      'gpt-4.1': 1000000,
+      'gpt-4.1-mini': 1000000,
+      'gpt-4.1-nano': 1000000,
+      // GPT-4o family
+      'gpt-4o': 128000,
       'gpt-4o-mini': 128000,
+      'gpt-4o-audio': 128000,
+      'gpt-4o-mini-audio': 128000,
+      // Legacy GPT-4 family
       'gpt-4-turbo': 128000,
       'gpt-4-turbo-preview': 128000,
       'gpt-4': 8192,
+      // GPT-3.5 family
       'gpt-3.5-turbo': 16385,
       'gpt-3.5-turbo-16k': 16385,
+      'gpt-3.5-turbo-instruct': 4096,
+      // Reasoning models
       'o1-preview': 128000,
       'o1-mini': 128000,
       'o3-mini': 128000,
-      'o3': 200000
+      'o3': 200000,
+      'o3-pro': 200000,
+      'o4-mini': 128000
     };
     
     return contextMap[modelId] || 4096;
@@ -144,17 +171,29 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private getModelDescription(modelId: string): string {
     const descMap: Record<string, string> = {
-      'gpt-4.1': 'Most capable model, optimized for speed',
-      'gpt-4o-mini': 'Affordable small model with GPT-4 intelligence',
-      'gpt-4-turbo': 'Latest GPT-4 Turbo with vision capabilities',
+      // GPT-4.1 family
+      'gpt-4.1': 'Latest and most capable model with 1M context',
+      'gpt-4.1-mini': 'Fast and affordable with GPT-4.1 intelligence',
+      'gpt-4.1-nano': 'Fastest model for classification and completion',
+      // GPT-4o family
+      'gpt-4o': 'Multimodal AI trained on text, images, and audio',
+      'gpt-4o-mini': 'Entry-level multimodal model',
+      'gpt-4o-audio': 'Audio-enabled version of GPT-4o',
+      'gpt-4o-mini-audio': 'Affordable audio model',
+      // Legacy models
+      'gpt-4-turbo': 'Previous GPT-4 with vision capabilities',
       'gpt-4-turbo-preview': 'Preview of GPT-4 Turbo features',
       'gpt-4': 'Original GPT-4 model',
-      'gpt-3.5-turbo': 'Fast and efficient model for most tasks',
+      'gpt-3.5-turbo': 'Fast and efficient model for basic tasks',
       'gpt-3.5-turbo-16k': 'GPT-3.5 with extended context window',
+      'gpt-3.5-turbo-instruct': 'Completion model for specific use cases',
+      // Reasoning models
       'o1-preview': 'Advanced reasoning model for complex problems',
       'o1-mini': 'Faster reasoning model for STEM applications',
       'o3-mini': 'Efficient reasoning model with enhanced capabilities',
-      'o3': 'Most advanced reasoning model for complex tasks'
+      'o3': 'Advanced reasoning model for complex tasks',
+      'o3-pro': 'Extended reasoning for maximum reliability',
+      'o4-mini': 'Latest mini reasoning model'
     };
     
     return descMap[modelId] || 'OpenAI language model';
@@ -234,29 +273,29 @@ export class OpenAIApiAdapter implements ApiAdapter {
       {
         id: 'gpt-4.1',
         name: 'GPT-4.1',
+        context_length: 1000000,
+        description: 'Latest and most capable model with 1M context',
+        pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
+      },
+      {
+        id: 'gpt-4.1-mini',
+        name: 'GPT-4.1 Mini',
+        context_length: 1000000,
+        description: 'Fast and affordable with GPT-4.1 intelligence',
+        pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
+      },
+      {
+        id: 'gpt-4o',
+        name: 'GPT-4o',
         context_length: 128000,
-        description: 'Most capable model, optimized for speed',
+        description: 'Multimodal AI trained on text, images, and audio',
         pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
       },
       {
         id: 'gpt-4o-mini',
         name: 'GPT-4o Mini',
         context_length: 128000,
-        description: 'Affordable small model with GPT-4 intelligence',
-        pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
-      },
-      {
-        id: 'gpt-4-turbo',
-        name: 'GPT-4 Turbo',
-        context_length: 128000,
-        description: 'Latest GPT-4 Turbo with vision capabilities',
-        pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
-      },
-      {
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5 Turbo',
-        context_length: 16385,
-        description: 'Fast and efficient model for most tasks',
+        description: 'Entry-level multimodal model',
         pricing: { prompt: '0', completion: '0', image: '0', request: '0' }
       }
     ];

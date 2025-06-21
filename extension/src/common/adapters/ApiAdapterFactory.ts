@@ -69,7 +69,12 @@ export class ApiAdapterFactory {
     // Transform from OpenAI to OpenRouter format
     if (fromProvider === 'openai' && toProvider === 'openrouter') {
       // Add the openai/ prefix if it's a known OpenAI model
-      const openAIModels = ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'gpt-4.1', 'gpt-4o-mini'];
+      const openAIModels = [
+        'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano',
+        'gpt-4o', 'gpt-4o-mini', 'gpt-4o-audio', 'gpt-4o-mini-audio',
+        'gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo',
+        'o1-preview', 'o1-mini', 'o3', 'o3-mini', 'o3-pro', 'o4-mini'
+      ];
       if (openAIModels.some(model => modelName.startsWith(model))) {
         return `openai/${modelName}`;
       }

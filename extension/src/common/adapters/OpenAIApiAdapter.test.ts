@@ -205,7 +205,7 @@ describe('OpenAIApiAdapter', () => {
       const models = await adapter.fetchAvailableModels();
       
       expect(models).toHaveLength(4);
-      expect(models[0].id).toBe('gpt-4o');
+      expect(models[0].id).toBe('gpt-4.1');
     });
 
     it('should handle 401 unauthorized error', async () => {
@@ -219,7 +219,7 @@ describe('OpenAIApiAdapter', () => {
       // Should return fallback models on error
       const models = await adapter.fetchAvailableModels();
       expect(models).toHaveLength(4);
-      expect(models[0].id).toBe('gpt-4o');
+      expect(models[0].id).toBe('gpt-4.1');
     });
 
     it('should cache models for 5 minutes', async () => {
@@ -272,7 +272,7 @@ describe('OpenAIApiAdapter', () => {
       // Should return fallback models when no API key
       const models = await adapterNoKey.fetchAvailableModels();
       expect(models).toHaveLength(4);
-      expect(models[0].id).toBe('gpt-4o');
+      expect(models[0].id).toBe('gpt-4.1');
     });
   });
 
