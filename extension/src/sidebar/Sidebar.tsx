@@ -508,12 +508,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className={`sidebar__content ${showSettings ? 'hidden' : ''}`}>
             {/* Compute mutually exclusive visibility states */}
             {(() => {
-              // Priority 1: Show onboarding if no providers configured or current provider has no key
-              const showOnboarding = !hasAnyProvider || !settings.apiKey;
-              // Priority 2: Show getting started only if onboarding not shown AND has key AND no video
-              const showGettingStarted = !showOnboarding && !!settings.apiKey && !videoId;
-              // Priority 3: Show messages only if has key AND on video page
-              const showMessages = !showOnboarding && !!settings.apiKey && !!videoId;
+              // Priority 1: Show onboarding if current provider doesn't have an API key
+              const showOnboarding = !settings.apiKey;
+              // Priority 2: Show tutorial only on non-video pages when provider has API key  
+              const showGettingStarted = !!settings.apiKey && !videoId;
+              // Priority 3: Show messages only on video pages when provider has API key
+              const showMessages = !!settings.apiKey && !!videoId;
 
               return (
                 <>
