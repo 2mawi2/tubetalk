@@ -286,6 +286,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           console.error('Failed to create API adapter for new provider:', error);
           setApiAdapter(undefined);
         }
+        
+        // Clear chat history when switching providers (same as clicking refresh button)
+        onClickRefresh();
       } else if (newSettings.apiKey !== settings.apiKey) {
         // Just API key changed, save it to current provider
         await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
