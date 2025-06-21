@@ -135,6 +135,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === "toggleSidebar") {
     toggleSidebar();
+  } else if (request.action === "showSettings") {
+    // Open sidebar if not already open
+    if (!sidebarRoot) {
+      toggleSidebar();
+    }
+    // Dispatch event to show settings with provider
+    setTimeout(() => {
+      const event = new CustomEvent('tubetalk-show-settings', {
+        detail: {
+          provider: request.provider
+        }
+      });
+      window.dispatchEvent(event);
+    }, 500); // Wait for sidebar to initialize
   } else if (request.type === 'storage_updated' && request.key === 'openaiApiKey') {
     console.log('[TubeTalk] Broadcasting API key update to React components');
     

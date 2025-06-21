@@ -38,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isStreaming, setIsStreaming] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
+  const [hasAnyProvider, setHasAnyProvider] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const { getMessage, setLocale } = useTranslations();
@@ -134,6 +135,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       
       const { openaiApiKey } = await storageAdapter.getApiKey();
       setHasApiKey(!!openaiApiKey);
+      
+      // Check if any provider has been configured
+      const [hasOpenRouter, hasOpenAI] = await Promise.all([
+        storageAdapter.hasProviderKey('openrouter'),
+        storageAdapter.hasProviderKey('openai')
+      ]);
+      setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      
       setIsLoading(false);
     };
     loadApiKey();
@@ -149,6 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       };
       setSettings(newSettings);
       setHasApiKey(true);
+      setHasAnyProvider(true);
       
       setApiAdapter(new OpenRouterApiAdapter(apiKeyUpdate, () => storageAdapter.getModelPreferences()));
       
@@ -158,6 +168,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setIsInitialized(true);
     }
   }, [apiKeyUpdate, storageAdapter, settings]);
+
+  // Listen for show settings event from content script
+  useEffect(() => {
+    const handleShowSettings = (event: CustomEvent) => {
+      console.log('[TubeTalk] Received show settings event:', event.detail);
+      setShowSettings(true);
+      
+      // If a provider was specified, we could potentially update the settings here
+      // For now, we'll just open the settings panel
+    };
+
+    window.addEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+    
+    return () => {
+      window.removeEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+    };
+  }, [setShowSettings]);
 
   const handleSettingsChange = async (newSettings: SettingsType) => {
     try {
@@ -371,7 +398,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className={`sidebar__content ${showSettings ? 'hidden' : ''}`}>
             <Tutorial isVisible={!!settings.apiKey && !videoId} />
-            <Onboarding isVisible={!settings.apiKey} initialHasKey={hasApiKey} />
+            <Onboarding isVisible={!hasAnyProvider} initialHasKey={hasApiKey} />
             {settings.apiKey && videoId && (
               <Messages
                 ref={messagesRef}

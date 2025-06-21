@@ -37,6 +37,10 @@ vi.mock('../tutorial', () => ({
   Tutorial: () => null
 }));
 
+vi.mock('../onboarding/components/Onboarding', () => ({
+  Onboarding: () => null
+}));
+
 vi.mock('../common/translations/Translations', () => ({
   useTranslations: vi.fn()
 }));
@@ -68,6 +72,20 @@ vi.mock('../message-input/MessageInput', () => ({
         <option value="test">Test Model</option>
       </select>
       <textarea data-testid="yt-sidebar-chatInput" disabled={hasError || disabled} />
+    </div>
+  ))
+}));
+
+// Mock the Settings component to properly handle changes
+vi.mock('../settings/Settings', () => ({
+  Settings: vi.fn().mockImplementation(({ settings, onSettingsChange }) => (
+    <div>
+      <input
+        type="checkbox"
+        data-testid="dark-mode-toggle"
+        checked={settings.isDarkMode}
+        onChange={(e) => onSettingsChange({ ...settings, isDarkMode: e.target.checked })}
+      />
     </div>
   ))
 }));
@@ -129,7 +147,7 @@ const mockStorageAdapter: StorageAdapter = {
   setProviderModelPreferences: vi.fn().mockResolvedValue(undefined),
   getProviderModelPreferences: vi.fn().mockResolvedValue([]),
   getCurrentProviderConfig: vi.fn().mockResolvedValue({ apiKey: null, modelPreferences: [] }),
-  hasProviderKey: vi.fn().mockResolvedValue(false)
+  hasProviderKey: vi.fn().mockResolvedValue(true)
 };
 
 describe('Sidebar', () => {

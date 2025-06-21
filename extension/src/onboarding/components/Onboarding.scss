@@ -24,6 +24,102 @@
     max-width: 600px;
   }
 
+  &__subtitle {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+
+  &__subdescription {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    color: var(--text-secondary);
+    max-width: 600px;
+  }
+
+  &__back-button {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  &__provider-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  &__provider-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    background-color: var(--background-secondary);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      border-color: var(--button-primary-background);
+    }
+
+    &:active {
+      transform: translateY(-2px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__provider-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    object-fit: contain;
+
+    &--openai {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+    }
+  }
+
+  &__provider-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  &__provider-description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
   &__buttons {
     display: flex;
     gap: 16px;
@@ -145,6 +241,22 @@
     background-color: #ffffff;
     border: 1px solid #e8e8e8;
   }
+
+  &__provider-card {
+    background-color: #ffffff;
+    border-color: #e8e8e8;
+    
+    &:hover {
+      border-color: #4285f4;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  &__provider-icon--openai {
+    // OpenAI logo is black, no filter needed for light mode
+    filter: none;
+  }
+
 }
 
 // Dark mode specific styles
@@ -166,5 +278,19 @@
     &:hover {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+  }
+
+  &__provider-card {
+    background-color: var(--background-secondary);
+    border-color: var(--border-color);
+    
+    &:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  &__provider-icon--openai {
+    // Invert the black OpenAI logo to white for dark mode
+    filter: invert(1) brightness(1);
   }
 }
