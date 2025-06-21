@@ -124,6 +124,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     const loadApiKey = async () => {
+      // Ensure migration runs on startup
+      await storageAdapter.migrateStorage();
+      
       const { openaiApiKey } = await storageAdapter.getApiKey();
       setHasApiKey(!!openaiApiKey);
       setIsLoading(false);

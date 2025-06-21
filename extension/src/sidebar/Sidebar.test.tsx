@@ -103,7 +103,17 @@ const mockStorageAdapter: StorageAdapter = {
   getSelectedSummaryLanguage: vi.fn().mockResolvedValue('en'),
   setSelectedSummaryLanguage: vi.fn().mockResolvedValue(undefined),
   getShowSuggestedQuestions: vi.fn().mockResolvedValue(true),
-  setShowSuggestedQuestions: vi.fn().mockResolvedValue(undefined)
+  setShowSuggestedQuestions: vi.fn().mockResolvedValue(undefined),
+  migrateStorage: vi.fn().mockResolvedValue(undefined),
+  getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+  setCurrentProvider: vi.fn().mockResolvedValue(undefined),
+  getProviderConfig: vi.fn().mockResolvedValue({ apiKey: null, modelPreferences: [] }),
+  setProviderApiKey: vi.fn().mockResolvedValue(undefined),
+  getProviderApiKey: vi.fn().mockResolvedValue(null),
+  setProviderModelPreferences: vi.fn().mockResolvedValue(undefined),
+  getProviderModelPreferences: vi.fn().mockResolvedValue([]),
+  getCurrentProviderConfig: vi.fn().mockResolvedValue({ apiKey: null, modelPreferences: [] }),
+  hasProviderKey: vi.fn().mockResolvedValue(false)
 };
 
 describe('Sidebar', () => {
@@ -128,6 +138,7 @@ describe('Sidebar', () => {
       settings: {
         isDarkMode: false,
         apiKey: '',
+        provider: 'openrouter',
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',

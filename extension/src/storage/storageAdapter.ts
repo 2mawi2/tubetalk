@@ -1,17 +1,38 @@
 /// <reference types="chrome"/>
-import type { StorageAdapter } from './types';
+import type { StorageAdapter, ProviderType, ProviderConfig, ProvidersConfig } from './types';
 
 export const DEFAULT_VALUES = {
   MODEL_PREFERENCES: ["openai/gpt-4.1", "openai/gpt-4o-mini"] as string[],
   DARK_MODE: true,
   SHOW_SPONSORED: true,
   INCLUDE_TIMESTAMP: false,
-  SHOW_SUGGESTED_QUESTIONS: true
+  SHOW_SUGGESTED_QUESTIONS: true,
+  CURRENT_PROVIDER: 'openrouter' as ProviderType,
+  STORAGE_VERSION: 2
 } as const;
 
+export const DEFAULT_PROVIDERS: ProvidersConfig = {
+  openrouter: {
+    apiKey: null,
+    modelPreferences: ["openai/gpt-4.1", "openai/gpt-4o-mini"]
+  },
+  openai: {
+    apiKey: null,
+    modelPreferences: ["gpt-4-turbo-preview", "gpt-3.5-turbo"]
+  }
+};
+
 export const STORAGE_KEYS = {
+  // Legacy keys
   API_KEY: 'openaiApiKey',
   MODEL_PREFERENCES: 'modelPreferences',
+  
+  // New provider keys
+  CURRENT_PROVIDER: 'currentProvider',
+  PROVIDERS: 'providers',
+  STORAGE_VERSION: 'storageVersion',
+  
+  // Other settings
   DARK_MODE: 'darkMode',
   SHOW_SPONSORED: 'showSponsored',
   INCLUDE_TIMESTAMP: 'includeTimestamp',
@@ -47,21 +68,125 @@ const storageAdapter: StorageAdapter = {
     });
   },
 
+  // Provider management methods
+  async getCurrentProvider(): Promise<ProviderType> {
+    return this.getStorageValue(STORAGE_KEYS.CURRENT_PROVIDER, DEFAULT_VALUES.CURRENT_PROVIDER);
+  },
+
+  async setCurrentProvider(provider: ProviderType): Promise<void> {
+    return this.setStorageValue(STORAGE_KEYS.CURRENT_PROVIDER, provider);
+  },
+
+  async getProviderConfig(provider: ProviderType): Promise<ProviderConfig> {
+    const providers = await this.getStorageValue(STORAGE_KEYS.PROVIDERS, DEFAULT_PROVIDERS);
+    return providers[provider] || DEFAULT_PROVIDERS[provider];
+  },
+
+  async setProviderApiKey(provider: ProviderType, apiKey: string): Promise<void> {
+    const providers = await this.getStorageValue(STORAGE_KEYS.PROVIDERS, DEFAULT_PROVIDERS);
+    providers[provider] = {
+      ...providers[provider],
+      apiKey
+    };
+    return this.setStorageValue(STORAGE_KEYS.PROVIDERS, providers);
+  },
+
+  async getProviderApiKey(provider: ProviderType): Promise<string | null> {
+    const config = await this.getProviderConfig(provider);
+    return config.apiKey;
+  },
+
+  async setProviderModelPreferences(provider: ProviderType, models: string[]): Promise<void> {
+    const providers = await this.getStorageValue(STORAGE_KEYS.PROVIDERS, DEFAULT_PROVIDERS);
+    providers[provider] = {
+      ...providers[provider],
+      modelPreferences: models
+    };
+    return this.setStorageValue(STORAGE_KEYS.PROVIDERS, providers);
+  },
+
+  async getProviderModelPreferences(provider: ProviderType): Promise<string[]> {
+    const config = await this.getProviderConfig(provider);
+    return config.modelPreferences;
+  },
+
+  async getCurrentProviderConfig(): Promise<ProviderConfig> {
+    const currentProvider = await this.getCurrentProvider();
+    return this.getProviderConfig(currentProvider);
+  },
+
+  async hasProviderKey(provider: ProviderType): Promise<boolean> {
+    const apiKey = await this.getProviderApiKey(provider);
+    return apiKey !== null && apiKey !== '';
+  },
+
+  // Migration method
+  async migrateStorage(): Promise<void> {
+    const version = await this.getStorageValue(STORAGE_KEYS.STORAGE_VERSION, 1);
+    
+    if (version < 2) {
+      // Migrate from v1 to v2
+      const legacyApiKey = await this.getStorageValue(STORAGE_KEYS.API_KEY, null);
+      const legacyModelPrefs = await this.getStorageValue(STORAGE_KEYS.MODEL_PREFERENCES, DEFAULT_VALUES.MODEL_PREFERENCES);
+      
+      if (legacyApiKey) {
+        // Initialize providers structure with legacy data migrated to openrouter
+        const providers: ProvidersConfig = {
+          openrouter: {
+            apiKey: legacyApiKey,
+            modelPreferences: legacyModelPrefs
+          },
+          openai: DEFAULT_PROVIDERS.openai
+        };
+        
+        await this.setStorageValue(STORAGE_KEYS.PROVIDERS, providers);
+        await this.setStorageValue(STORAGE_KEYS.CURRENT_PROVIDER, 'openrouter');
+      } else {
+        // No legacy data, just set defaults
+        await this.setStorageValue(STORAGE_KEYS.PROVIDERS, DEFAULT_PROVIDERS);
+        await this.setStorageValue(STORAGE_KEYS.CURRENT_PROVIDER, DEFAULT_VALUES.CURRENT_PROVIDER);
+      }
+      
+      // Update version
+      await this.setStorageValue(STORAGE_KEYS.STORAGE_VERSION, 2);
+    }
+  },
+
   async getApiKey(): Promise<{ openaiApiKey: string | null }> {
-    const apiKey = await this.getStorageValue(STORAGE_KEYS.API_KEY, null);
+    // First run migration to ensure we have the new structure
+    await this.migrateStorage();
+    
+    // For backward compatibility, return the current provider's API key
+    const currentProvider = await this.getCurrentProvider();
+    const apiKey = await this.getProviderApiKey(currentProvider);
     return { openaiApiKey: apiKey };
   },
 
   async setApiKey(apiKey: string): Promise<void> {
-    return this.setStorageValue(STORAGE_KEYS.API_KEY, apiKey);
+    // First run migration to ensure we have the new structure
+    await this.migrateStorage();
+    
+    // For backward compatibility, set the API key for the current provider
+    const currentProvider = await this.getCurrentProvider();
+    return this.setProviderApiKey(currentProvider, apiKey);
   },
 
   async getModelPreferences(): Promise<string[]> {
-    return this.getStorageValue(STORAGE_KEYS.MODEL_PREFERENCES, DEFAULT_VALUES.MODEL_PREFERENCES);
+    // First run migration to ensure we have the new structure
+    await this.migrateStorage();
+    
+    // Get model preferences for the current provider
+    const currentProvider = await this.getCurrentProvider();
+    return this.getProviderModelPreferences(currentProvider);
   },
 
   async setModelPreferences(models: string[]): Promise<void> {
-    return this.setStorageValue(STORAGE_KEYS.MODEL_PREFERENCES, models);
+    // First run migration to ensure we have the new structure
+    await this.migrateStorage();
+    
+    // Set model preferences for the current provider
+    const currentProvider = await this.getCurrentProvider();
+    return this.setProviderModelPreferences(currentProvider, models);
   },
 
   async getDarkMode(): Promise<boolean> {
