@@ -268,8 +268,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         document.documentElement.setAttribute('data-theme', newSettings.isDarkMode ? 'dark' : 'light');
       }
 
+      // Track if provider changed to call refresh after state updates
+      const providerChanged = newSettings.provider !== settings.provider;
+
       // Handle provider change
-      if (newSettings.provider !== settings.provider) {
+      if (providerChanged) {
         await storageAdapter.setCurrentProvider(newSettings.provider);
         // Load the API key for the new provider
         const newProviderApiKey = await storageAdapter.getProviderApiKey(newSettings.provider);
@@ -286,9 +289,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           console.error('Failed to create API adapter for new provider:', error);
           setApiAdapter(undefined);
         }
-        
-        // Clear chat history when switching providers (same as clicking refresh button)
-        onClickRefresh();
       } else if (newSettings.apiKey !== settings.apiKey) {
         // Just API key changed, save it to current provider
         await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
@@ -325,6 +325,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setHasApiKey(newSettings.apiKey !== null && newSettings.apiKey !== '');
 
       setSettings(newSettings);
+
+      // Clear chat history when switching providers (after state is updated)
+      if (providerChanged) {
+        onClickRefresh();
+      }
 
       if (newSettings.selectedLocale !== settings.selectedLocale) {
         await setLocale(newSettings.selectedLocale);
