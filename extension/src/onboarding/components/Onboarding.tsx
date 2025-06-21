@@ -56,7 +56,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ isVisible, initialHasKey
     setCurrentView('selection');
   };
 
-  if (!isVisible || hasApiKey) return null;
+  if (!isVisible) return null;
 
   if (currentView === 'selection') {
     return (

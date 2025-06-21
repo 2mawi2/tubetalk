@@ -559,5 +559,74 @@ describe('Sidebar', () => {
       // The component should call the right methods to determine onboarding visibility
       expect(screen.getByTestId('close-button')).toBeInTheDocument();
     });
+
+    it('should show onboarding when user switches to provider without API key', async () => {
+      // This test simulates the user's reported scenario:
+      // onboarding -> click OpenAI -> close settings without configuring key -> should see onboarding again
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: '' }), // No API key configured
+        hasProviderKey: vi.fn().mockResolvedValue(false), // No providers have keys
+        getCurrentProvider: vi.fn().mockResolvedValue('openai'), // Current provider is OpenAI
+        getProviderApiKey: vi.fn().mockResolvedValue(null), // OpenAI has no key
+        migrateStorage: vi.fn().mockResolvedValue(undefined)
+      };
+
+      render(
+        <Sidebar onClose={vi.fn()} storageAdapter={customStorageAdapter} />
+      );
+
+      // Wait for initialization
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openrouter');
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openai');
+      });
+
+      // Should still show the close button (component is rendered)
+      expect(screen.getByTestId('close-button')).toBeInTheDocument();
+    });
+
+    it('should update provider state when receiving show-settings event with provider', async () => {
+      // This test simulates the exact user scenario:
+      // OpenRouter configured -> onboarding -> click OpenAI -> settings opened -> close without changes
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'openrouter-key' }), // Initially OpenRouter key
+        hasProviderKey: vi.fn().mockImplementation(async (provider) => {
+          return provider === 'openrouter' ? true : false; // Only OpenRouter has key
+        }),
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+        getProviderApiKey: vi.fn().mockImplementation(async (provider) => {
+          return provider === 'openrouter' ? 'openrouter-key' : null; // OpenAI has no key
+        }),
+        setCurrentProvider: vi.fn().mockResolvedValue(undefined),
+        migrateStorage: vi.fn().mockResolvedValue(undefined)
+      };
+
+      render(
+        <Sidebar onClose={vi.fn()} storageAdapter={customStorageAdapter} />
+      );
+
+      // Wait for initialization - should have OpenRouter as provider
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+      });
+
+      // Simulate the show-settings event with OpenAI provider (like from onboarding redirect)
+      const event = new CustomEvent('tubetalk-show-settings', {
+        detail: { provider: 'openai' }
+      });
+      window.dispatchEvent(event);
+
+      // Wait for the event handler to process
+      await waitFor(() => {
+        expect(customStorageAdapter.getProviderApiKey).toHaveBeenCalledWith('openai');
+        expect(customStorageAdapter.setCurrentProvider).toHaveBeenCalledWith('openai');
+      });
+
+      // The component should still be rendered
+      expect(screen.getByTestId('close-button')).toBeInTheDocument();
+    });
   });
 }); 

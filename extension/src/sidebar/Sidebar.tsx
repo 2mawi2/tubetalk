@@ -204,12 +204,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Listen for show settings event from content script
   useEffect(() => {
-    const handleShowSettings = (event: CustomEvent) => {
+    const handleShowSettings = async (event: CustomEvent) => {
       console.log('[TubeTalk] Received show settings event:', event.detail);
       setShowSettings(true);
       
-      // If a provider was specified, we could potentially update the settings here
-      // For now, we'll just open the settings panel
+      // If a provider was specified, update the settings to reflect the provider switch
+      if (event.detail?.provider && event.detail.provider !== settings.provider) {
+        console.log('[TubeTalk] Updating provider to:', event.detail.provider);
+        
+        // Get the API key for the specified provider
+        const newProviderApiKey = await storageAdapter.getProviderApiKey(event.detail.provider);
+        
+        // Update settings to reflect the new provider
+        const updatedSettings = {
+          ...settings,
+          provider: event.detail.provider,
+          apiKey: newProviderApiKey || ''
+        };
+        
+        setSettings(updatedSettings);
+        
+        // Also update storage to persist the provider change
+        await storageAdapter.setCurrentProvider(event.detail.provider);
+        
+        // Update provider state tracking
+        const [hasOpenRouter, hasOpenAI] = await Promise.all([
+          storageAdapter.hasProviderKey('openrouter'),
+          storageAdapter.hasProviderKey('openai')
+        ]);
+        setHasAnyProvider(hasOpenRouter || hasOpenAI);
+        setHasApiKey(!!updatedSettings.apiKey);
+      }
     };
 
     window.addEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
