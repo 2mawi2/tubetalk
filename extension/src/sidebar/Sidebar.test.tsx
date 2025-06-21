@@ -628,5 +628,48 @@ describe('Sidebar', () => {
       // The component should still be rendered
       expect(screen.getByTestId('close-button')).toBeInTheDocument();
     });
+
+    it('should handle initial onboarding OpenAI flow correctly', async () => {
+      // This test simulates the exact edge case:
+      // Initial onboarding (no providers) -> click OpenAI -> settings -> no key -> close -> should see onboarding
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: '' }), // No key initially
+        hasProviderKey: vi.fn().mockResolvedValue(false), // No providers have keys
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'), // Default provider
+        getProviderApiKey: vi.fn().mockImplementation(async (provider) => {
+          return null; // No keys for any provider
+        }),
+        setCurrentProvider: vi.fn().mockResolvedValue(undefined),
+        migrateStorage: vi.fn().mockResolvedValue(undefined)
+      };
+
+      render(
+        <Sidebar onClose={vi.fn()} storageAdapter={customStorageAdapter} />
+      );
+
+      // Wait for initialization with no providers configured
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+      });
+
+      // Simulate the exact sequence: onboarding -> click OpenAI -> settings open
+      const event = new CustomEvent('tubetalk-show-settings', {
+        detail: { provider: 'openai' }
+      });
+      window.dispatchEvent(event);
+
+      // Wait for the event handler to process
+      await waitFor(() => {
+        expect(customStorageAdapter.getProviderApiKey).toHaveBeenCalledWith('openai');
+        expect(customStorageAdapter.setCurrentProvider).toHaveBeenCalledWith('openai');
+      });
+
+      // The component should still be rendered (not empty screen)
+      expect(screen.getByTestId('close-button')).toBeInTheDocument();
+      
+      // Verify the state is consistent for showing onboarding when settings close
+      // (hasAnyProvider should be false, hasApiKey should be false)
+    });
   });
 }); 

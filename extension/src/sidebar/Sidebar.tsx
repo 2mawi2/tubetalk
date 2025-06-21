@@ -206,14 +206,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const handleShowSettings = async (event: CustomEvent) => {
       console.log('[TubeTalk] Received show settings event:', event.detail);
+      console.log('[TubeTalk] Current provider:', settings.provider);
       setShowSettings(true);
       
       // If a provider was specified, update the settings to reflect the provider switch
-      if (event.detail?.provider && event.detail.provider !== settings.provider) {
-        console.log('[TubeTalk] Updating provider to:', event.detail.provider);
+      if (event.detail?.provider) {
+        console.log('[TubeTalk] Provider specified:', event.detail.provider, 'Current:', settings.provider);
         
-        // Get the API key for the specified provider
-        const newProviderApiKey = await storageAdapter.getProviderApiKey(event.detail.provider);
+        // Always update provider state when specified, even if it's the same
+        // This ensures state is consistent when coming from onboarding
+        const [newProviderApiKey, hasOpenRouter, hasOpenAI] = await Promise.all([
+          storageAdapter.getProviderApiKey(event.detail.provider),
+          storageAdapter.hasProviderKey('openrouter'),
+          storageAdapter.hasProviderKey('openai')
+        ]);
+        
+        console.log('[TubeTalk] Provider API key check:', {
+          provider: event.detail.provider,
+          hasKey: !!newProviderApiKey,
+          hasOpenRouter,
+          hasOpenAI
+        });
         
         // Update settings to reflect the new provider
         const updatedSettings = {
@@ -222,18 +235,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           apiKey: newProviderApiKey || ''
         };
         
-        setSettings(updatedSettings);
-        
-        // Also update storage to persist the provider change
+        // Update storage to persist the provider change
         await storageAdapter.setCurrentProvider(event.detail.provider);
         
-        // Update provider state tracking
-        const [hasOpenRouter, hasOpenAI] = await Promise.all([
-          storageAdapter.hasProviderKey('openrouter'),
-          storageAdapter.hasProviderKey('openai')
-        ]);
+        // Update all state atomically to prevent inconsistencies
+        setSettings(updatedSettings);
         setHasAnyProvider(hasOpenRouter || hasOpenAI);
         setHasApiKey(!!updatedSettings.apiKey);
+        
+        console.log('[TubeTalk] Updated state after provider switch:', {
+          provider: updatedSettings.provider,
+          apiKey: updatedSettings.apiKey ? '[REDACTED]' : 'empty',
+          hasApiKey: !!updatedSettings.apiKey,
+          hasAnyProvider: hasOpenRouter || hasOpenAI,
+          hasOpenRouter,
+          hasOpenAI,
+          showSettings: true
+        });
       }
     };
 
@@ -242,7 +260,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => {
       window.removeEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
     };
-  }, [setShowSettings]);
+  }, [setShowSettings, settings, storageAdapter]);
 
   const handleSettingsChange = async (newSettings: SettingsType) => {
     try {
