@@ -47,5 +47,13 @@
     "settings_model_placeholder": "Выбрать модель",
     "settings_add_model": "Добавить модель",
     "settings_model_duplicate": "Эта модель уже была добавлена",
-    "rateButton": "Оценить TubeTalk"
+    "rateButton": "Оценить TubeTalk",
+    "providerSelectionLabel": "Провайдер ИИ",
+    "openRouterDescription": "Доступ к множественным моделям ИИ",
+    "openAIDescription": "Прямой доступ к API OpenAI",
+    "authenticateWithOpenRouter": "Аутентификация с OpenRouter",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "Получить ключ API OpenAI",
+    "openAIModelSelectionLabel": "Модели OpenAI",
+    "openAIModelInfo": "Применяются стандартные тарифы OpenAI"
 }

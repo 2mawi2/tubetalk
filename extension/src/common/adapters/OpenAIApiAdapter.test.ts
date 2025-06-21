@@ -20,14 +20,39 @@ describe('OpenAIApiAdapter', () => {
   });
 
   describe('fetchAvailableModels', () => {
-    it('should return hardcoded OpenAI models', async () => {
+    it('should fetch and filter OpenAI models from API', async () => {
+      const mockResponse = {
+        data: [
+          { id: 'gpt-4o', created: 123456 },
+          { id: 'gpt-4o-mini', created: 123456 },
+          { id: 'gpt-4-turbo', created: 123456 },
+          { id: 'gpt-3.5-turbo', created: 123456 },
+          { id: 'gpt-3.5-turbo-instruct', created: 123456 }, // Should be filtered out
+          { id: 'gpt-4-0125-preview', created: 123456 }, // Should be filtered out
+          { id: 'text-davinci-003', created: 123456 }, // Should be filtered out
+        ]
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
       const models = await adapter.fetchAvailableModels();
       
+      expect(global.fetch).toHaveBeenCalledWith('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${mockApiKey}`,
+          'OpenAI-Organization': mockOrgId
+        }
+      });
+
       expect(models).toHaveLength(4);
       expect(models).toEqual(expect.arrayContaining([
         expect.objectContaining({
           id: 'gpt-4o',
-          name: 'GPT-4 Optimized',
+          name: 'GPT-4o',
           context_length: 128000
         }),
         expect.objectContaining({
@@ -46,6 +71,82 @@ describe('OpenAIApiAdapter', () => {
           context_length: 16385
         })
       ]));
+    });
+
+    it('should handle API errors and return fallback models', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+      const models = await adapter.fetchAvailableModels();
+      
+      expect(models).toHaveLength(4);
+      expect(models[0].id).toBe('gpt-4o');
+    });
+
+    it('should handle 401 unauthorized error', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ error: { message: 'Invalid API key' } })
+      });
+
+      // Should return fallback models on error
+      const models = await adapter.fetchAvailableModels();
+      expect(models).toHaveLength(4);
+      expect(models[0].id).toBe('gpt-4o');
+    });
+
+    it('should cache models for 5 minutes', async () => {
+      const mockResponse = {
+        data: [
+          { id: 'gpt-4o', created: 123456 }
+        ]
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      // First call
+      await adapter.fetchAvailableModels();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      // Second call should use cache
+      await adapter.fetchAvailableModels();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('should work without organization ID', async () => {
+      const adapterNoOrg = new OpenAIApiAdapter(mockApiKey);
+      const mockResponse = {
+        data: [
+          { id: 'gpt-4o', created: 123456 }
+        ]
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      await adapterNoOrg.fetchAvailableModels();
+      
+      expect(global.fetch).toHaveBeenCalledWith('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${mockApiKey}`
+        }
+      });
+    });
+
+    it('should require API key', async () => {
+      const adapterNoKey = new OpenAIApiAdapter('');
+      
+      // Should return fallback models when no API key
+      const models = await adapterNoKey.fetchAvailableModels();
+      expect(models).toHaveLength(4);
+      expect(models[0].id).toBe('gpt-4o');
     });
   });
 

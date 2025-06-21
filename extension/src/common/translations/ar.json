@@ -47,5 +47,13 @@
     "settings_model_placeholder": "اختر النموذج",
     "settings_add_model": "إضافة نموذج",
     "settings_model_duplicate": "تم إضافة هذا النموذج بالفعل",
-    "rateButton": "قيّم TubeTalk"
+    "rateButton": "قيّم TubeTalk",
+    "providerSelectionLabel": "مزود الذكاء الاصطناعي",
+    "openRouterDescription": "الوصول إلى نماذج ذكاء اصطناعي متعددة",
+    "openAIDescription": "الوصول المباشر إلى واجهة برمجة تطبيقات OpenAI",
+    "authenticateWithOpenRouter": "المصادقة مع OpenRouter",
+    "openAIApiKeyPlaceholder": "sk-...",
+    "getOpenAIKey": "احصل على مفتاح OpenAI API الخاص بك",
+    "openAIModelSelectionLabel": "نماذج OpenAI",
+    "openAIModelInfo": "تسري الأسعار المعيارية لـ OpenAI"
 }

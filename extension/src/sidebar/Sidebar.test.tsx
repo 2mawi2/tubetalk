@@ -7,9 +7,9 @@ import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter';
 import type { StorageAdapter } from '../storage/types';
 import type { Message } from '../messages/components/Messages';
+import { Messages } from '../messages/components/Messages';
 import { useTranslations } from '../common/translations/Translations';
 import storageAdapter from '../storage/storageAdapter';
-import { DEFAULT_MODEL } from '@src/settings/settingsStorageAdapter';
 
 // Mock chrome API
 (global as any).chrome = {
@@ -59,15 +59,15 @@ vi.mock('../messages/components/Messages', () => ({
 }));
 
 // Mock the MessageInput component
-vi.mock('../messages/MessageInput', () => ({
-  MessageInput: vi.fn().mockImplementation(({ sendDisabled, isStreaming, hasError }) => (
+vi.mock('../message-input/MessageInput', () => ({
+  MessageInput: vi.fn().mockImplementation(({ sendDisabled, isStreaming, hasError, disabled }) => (
     <div>
       <button data-testid="send-button" disabled={sendDisabled || isStreaming || hasError}>Send</button>
-      <button data-testid="image-button" disabled={hasError}>Image</button>
+      <button data-testid="image-button" disabled={hasError || disabled}>Image</button>
       <select data-testid="model-select">
         <option value="test">Test Model</option>
       </select>
-      <textarea data-testid="yt-sidebar-chatInput" disabled={hasError} />
+      <textarea data-testid="yt-sidebar-chatInput" disabled={hasError || disabled} />
     </div>
   ))
 }));
@@ -86,6 +86,22 @@ vi.mock('../storage/storageAdapter', () => ({
     setModelPreferences: vi.fn()
   }
 }));
+
+// Mock the Settings component to render the toggles but not update customModels
+vi.mock('../settings/Settings', () => ({
+  Settings: vi.fn(({ settings, onSettingsChange }) => {
+    const { createElement: h } = require('react');
+    return h('div', { 'data-testid': 'settings-panel' },
+      h('input', {
+        type: 'checkbox',
+        'data-testid': 'dark-mode-toggle',
+        checked: settings.isDarkMode,
+        onChange: (e) => onSettingsChange({ ...settings, isDarkMode: e.target.checked })
+      })
+    );
+  })
+}));
+
 
 const mockStorageAdapter: StorageAdapter = {
   getDarkMode: vi.fn().mockResolvedValue(false),
@@ -187,7 +203,9 @@ describe('Sidebar', () => {
       getDarkMode: vi.fn().mockResolvedValue(true),
       getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
       getShowSponsored: vi.fn().mockResolvedValue(false),
-      getSelectedLocale: vi.fn().mockResolvedValue({ selectedLocale: 'de' })
+      getSelectedLocale: vi.fn().mockResolvedValue({ selectedLocale: 'de' }),
+      getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+      getProviderApiKey: vi.fn().mockResolvedValue('test-key')
     };
 
     render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
@@ -205,16 +223,20 @@ describe('Sidebar', () => {
       const state = useSidebarStore.getState();
       expect(state.settings.isDarkMode).toBe(true);
       expect(state.settings.apiKey).toBe('test-key');
+      expect(state.settings.provider).toBe('openrouter');
       expect(state.settings.showSponsored).toBe(false);
       expect(state.settings.selectedLocale).toBe('de');
-      expect(state.settings.customModels).toEqual([DEFAULT_MODEL]);
+      // customModels is initialized as empty array in Sidebar constructor
+      expect(state.settings.customModels).toEqual([]);
     });
   });
 
   it('creates API adapter when API key is set', async () => {
     const customStorageAdapter = {
       ...mockStorageAdapter,
-      getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' })
+      getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+      getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+      getProviderApiKey: vi.fn().mockResolvedValue('test-key')
     };
 
     render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
@@ -362,8 +384,20 @@ describe('Sidebar', () => {
     });
 
     it('renders MessageInput with correct initial state', async () => {
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+      
       await act(async () => {
-        render(<Sidebar onClose={() => {}} storageAdapter={mockStorageAdapter} />);
+        render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+      });
+
+      // Wait for initialization
+      await waitFor(() => {
+        const state = useSidebarStore.getState();
+        expect(state.settings.apiKey).toBe('test-key');
       });
 
       const sendButton = screen.getByTestId('send-button');
@@ -371,8 +405,20 @@ describe('Sidebar', () => {
     });
 
     it('keeps MessageInput send button disabled while streaming', async () => {
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+      
       await act(async () => {
-        render(<Sidebar onClose={() => {}} storageAdapter={mockStorageAdapter} />);
+        render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+      });
+
+      // Wait for initialization
+      await waitFor(() => {
+        const state = useSidebarStore.getState();
+        expect(state.settings.apiKey).toBe('test-key');
       });
 
       const sendButton = screen.getByTestId('send-button');
@@ -383,18 +429,26 @@ describe('Sidebar', () => {
     });
 
     it('disables all MessageInput controls when error occurs', async () => {
-      render(<Sidebar onClose={mockOnClose} storageAdapter={mockStorageAdapter} />);
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+      
+      // Mock Messages to trigger error state
+      (Messages as Mock).mockImplementation(({ onErrorStateChange }) => {
+        React.useEffect(() => {
+          onErrorStateChange?.(true);
+        }, [onErrorStateChange]);
+        return null;
+      });
+      
+      render(<Sidebar onClose={mockOnClose} storageAdapter={customStorageAdapter} />);
       
       // Wait for initialization
       await waitFor(() => {
-        expect(mockStorageAdapter.getDarkMode).toHaveBeenCalled();
-      });
-      
-      // Add an error message to trigger error state
-      act(() => {
-        useSidebarStore.setState({
-          messages: [{ id: '1', content: 'Error message', role: 'assistant', error: true }]
-        });
+        const state = useSidebarStore.getState();
+        expect(state.settings.apiKey).toBe('test-key');
       });
 
       const sendButton = screen.getByTestId('send-button');
