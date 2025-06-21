@@ -160,9 +160,24 @@ async function exchangeOpenRouterCode(code, senderId) {
 
 // Helper function to process a successful token exchange
 async function processSuccessfulExchange(apiKey, senderId) {
-  // Store the API key
+  // Store the API key in both legacy and new format
   await chrome.storage.sync.set({ openaiApiKey: apiKey });
-  console.log('API key stored successfully');
+  console.log('API key stored in legacy format');
+  
+  // Update provider-specific storage
+  const providers = await chrome.storage.sync.get('providers');
+  const providersConfig = providers.providers || {
+    openrouter: { apiKey: null, modelPreferences: ['openai/gpt-4.1', 'openai/gpt-4o-mini'] },
+    openai: { apiKey: null, modelPreferences: ['gpt-4-turbo-preview', 'gpt-3.5-turbo'] }
+  };
+  
+  // Update OpenRouter provider with the new API key
+  providersConfig.openrouter.apiKey = apiKey;
+  await chrome.storage.sync.set({ providers: providersConfig });
+  
+  // Set current provider to openrouter
+  await chrome.storage.sync.set({ currentProvider: 'openrouter' });
+  console.log('API key stored in provider-specific format');
   
   // Notify the callback page about successful auth
   if (senderId) {
@@ -182,6 +197,20 @@ async function processSuccessfulExchange(apiKey, senderId) {
           value: apiKey
         });
         console.log('Sent update to tab:', tab.id);
+        
+        // After OAuth completes, show settings with OpenRouter selected
+        setTimeout(async () => {
+          try {
+            await chrome.tabs.sendMessage(tab.id, { 
+              action: 'showSettings',
+              provider: 'openrouter' 
+            });
+            console.log('Sent showSettings message to tab:', tab.id);
+          } catch (error) {
+            console.log('Could not send showSettings to tab:', tab.id);
+          }
+        }, 500); // Small delay to ensure the API key update is processed first
+        
       } catch (error) {
         console.log('Could not send to tab:', tab.id);
       }

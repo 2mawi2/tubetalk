@@ -4,7 +4,7 @@ export const STORAGE_KEYS = {
   CUSTOM_MODELS: 'customModels'
 } as const;
 
-export const DEFAULT_MODEL = 'openai/gpt-4.1';
+export const DEFAULT_MODEL = 'gpt-4.1';
 
 export const DEFAULT_VALUES = {
   CUSTOM_MODELS: [] as string[]

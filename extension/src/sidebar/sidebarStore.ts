@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Settings } from '../settings/types'
-import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter'
+import { ApiAdapter } from '../common/adapters/ApiAdapter'
 import type { Message as MessagesMessage } from '../messages/components/Messages'
 
 export type Message = MessagesMessage;
@@ -10,12 +10,12 @@ interface SidebarState {
   isInitialized: boolean
   settings: Settings
   messages: Message[]
-  apiAdapter?: OpenRouterApiAdapter
+  apiAdapter?: ApiAdapter
   setShowSettings: (show: boolean) => void
   setIsInitialized: (initialized: boolean) => void
   setSettings: (settings: Settings) => void
   setMessages: (messages: Message[]) => void
-  setApiAdapter: (adapter: OpenRouterApiAdapter | undefined) => void
+  setApiAdapter: (adapter: ApiAdapter | undefined) => void
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
@@ -24,6 +24,7 @@ export const useSidebarStore = create<SidebarState>((set) => ({
   settings: {
     isDarkMode: false,
     apiKey: '',
+    provider: 'openrouter',
     showSponsored: true,
     selectedLocale: 'en',
     selectedSummaryLanguage: null,

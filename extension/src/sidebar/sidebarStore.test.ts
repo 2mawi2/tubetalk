@@ -1,5 +1,6 @@
 import { useSidebarStore } from './sidebarStore'
-import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter'
+import { ApiAdapter } from '../common/adapters/ApiAdapter'
+import type { ProviderType } from '../storage/types'
 import { beforeEach, expect, describe, it } from 'vitest'
 
 describe('sidebarStore', () => {
@@ -10,6 +11,7 @@ describe('sidebarStore', () => {
       settings: {
         isDarkMode: false,
         apiKey: '',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',
@@ -28,6 +30,7 @@ describe('sidebarStore', () => {
     expect(store.settings).toEqual({
       isDarkMode: false,
       apiKey: '',
+      provider: 'openrouter',
       showSponsored: true,
       selectedLocale: 'en',
       selectedSummaryLanguage: 'en',
@@ -56,6 +59,7 @@ describe('sidebarStore', () => {
       const newSettings = {
         isDarkMode: true,
         apiKey: 'test-key',
+        provider: 'openrouter' as ProviderType,
         showSponsored: false,
         selectedLocale: 'de',
         selectedSummaryLanguage: 'de',
@@ -72,6 +76,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: true,
         apiKey: '',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',
@@ -83,6 +88,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: true,
         apiKey: 'new-key',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',
@@ -98,6 +104,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: false,
         apiKey: '',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',
@@ -112,6 +119,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: false,
         apiKey: '',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'invalid-locale',
         selectedSummaryLanguage: 'en',
@@ -205,14 +213,14 @@ describe('sidebarStore', () => {
       const store = useSidebarStore.getState()
       const mockAdapter = {
         someMethod: () => {}
-      } as unknown as OpenRouterApiAdapter
+      } as unknown as ApiAdapter
       store.setApiAdapter(mockAdapter)
       expect(useSidebarStore.getState().apiAdapter).toBe(mockAdapter)
     })
 
     it('should handle setting apiAdapter to undefined', () => {
       const store = useSidebarStore.getState()
-      const mockAdapter = {} as OpenRouterApiAdapter
+      const mockAdapter = {} as ApiAdapter
       store.setApiAdapter(mockAdapter)
       store.setApiAdapter(undefined)
       expect(useSidebarStore.getState().apiAdapter).toBeUndefined()
@@ -222,15 +230,15 @@ describe('sidebarStore', () => {
       const store = useSidebarStore.getState()
       const mockAdapter = {
         id: 'test'
-      } as unknown as OpenRouterApiAdapter
+      } as unknown as ApiAdapter
       store.setApiAdapter(mockAdapter)
       expect(useSidebarStore.getState().apiAdapter).toBe(mockAdapter)
     })
 
     it('should handle multiple apiAdapter updates', () => {
       const store = useSidebarStore.getState()
-      const mockAdapter1 = { id: '1' } as unknown as OpenRouterApiAdapter
-      const mockAdapter2 = { id: '2' } as unknown as OpenRouterApiAdapter
+      const mockAdapter1 = { id: '1' } as unknown as ApiAdapter
+      const mockAdapter2 = { id: '2' } as unknown as ApiAdapter
       
       store.setApiAdapter(mockAdapter1)
       expect(useSidebarStore.getState().apiAdapter).toBe(mockAdapter1)
@@ -249,6 +257,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: true,
         apiKey: 'test-key',
+        provider: 'openrouter' as ProviderType,
         showSponsored: false,
         selectedLocale: 'fr',
         selectedSummaryLanguage: 'fr',
@@ -262,6 +271,7 @@ describe('sidebarStore', () => {
       expect(finalState.settings).toEqual({
         isDarkMode: true,
         apiKey: 'test-key',
+        provider: 'openrouter' as ProviderType,
         showSponsored: false,
         selectedLocale: 'fr',
         selectedSummaryLanguage: 'fr',
@@ -286,6 +296,7 @@ describe('sidebarStore', () => {
       store.setSettings({
         isDarkMode: true,
         apiKey: 'test-key',
+        provider: 'openrouter' as ProviderType,
         showSponsored: true,
         selectedLocale: 'en',
         selectedSummaryLanguage: 'en',

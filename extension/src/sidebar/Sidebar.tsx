@@ -7,11 +7,12 @@ import { IconButton } from '../common/components/IconButton';
 import { useTranslations } from '../common/translations/Translations';
 import { useStorageListener } from '../common/hooks/useStorageListener';
 import './Sidebar.scss';
-import { Tutorial, useVideoId } from '../tutorial';
+import { GettingStarted, useVideoId } from '../tutorial';
 import { Onboarding } from '../onboarding/components/Onboarding';
 import { MessageInput } from '../message-input/MessageInput';
 import { ChromePromptAdapter } from '../common/adapters/PromptAdapter';
-import { MessageContent, OpenRouterApiAdapter } from '../common/adapters/ApiAdapter';
+import { MessageContent } from '../common/adapters/ApiAdapter';
+import { ApiAdapterFactory } from '../common/adapters/ApiAdapterFactory';
 import { useSidebarStore } from './sidebarStore';
 import { Messages, MessagesRef } from '../messages/components/Messages';
 
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isStreaming, setIsStreaming] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
+  const [hasAnyProvider, setHasAnyProvider] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const { getMessage, setLocale } = useTranslations();
@@ -60,26 +62,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const apiKeyUpdate = useStorageListener('openaiApiKey');
 
   useEffect(() => {
-    if (isInitialized && settings.apiKey) {
-      setApiAdapter(new OpenRouterApiAdapter(settings.apiKey, () => storageAdapter.getModelPreferences()));
+    if (isInitialized && settings.apiKey && settings.provider) {
+      try {
+        const adapter = ApiAdapterFactory.createAdapter(
+          settings.provider,
+          settings.apiKey,
+          () => storageAdapter.getModelPreferences()
+        );
+        setApiAdapter(adapter);
+      } catch (error) {
+        console.error('Failed to create API adapter:', error);
+        setApiAdapter(undefined);
+      }
     }
-  }, [settings.apiKey, storageAdapter, isInitialized]);
+  }, [settings.apiKey, settings.provider, storageAdapter, isInitialized]);
 
   useEffect(() => {
     const initSettings = async () => {
       try {
-        const [isDarkMode, apiKeyData, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions] = await Promise.all([
+        const [isDarkMode, apiKeyData, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions, currentProvider] = await Promise.all([
           storageAdapter.getDarkMode(),
           storageAdapter.getApiKey(),
           storageAdapter.getShowSponsored(),
           storageAdapter.getSelectedLocale(),
           storageAdapter.getSelectedSummaryLanguage(),
-          storageAdapter.getShowSuggestedQuestions()
+          storageAdapter.getShowSuggestedQuestions(),
+          storageAdapter.getCurrentProvider()
         ]);
+
+        // Get the API key for the current provider
+        const providerApiKey = await storageAdapter.getProviderApiKey(currentProvider);
 
         const newSettings: SettingsType = {
           isDarkMode,
-          apiKey: apiKeyData.openaiApiKey || '',
+          apiKey: providerApiKey || '',
+          provider: currentProvider,
           showSponsored: showSponsoredValue,
           selectedLocale: localeData.selectedLocale || 'en',
           selectedSummaryLanguage: selectedSummaryLanguage,
@@ -106,9 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     if (settings.apiKey && videoId) {
-      setIsStreaming(true);
+      // Only auto-start streaming if we have messages and are initialized
+      // This prevents auto-streaming after provider switches that clear the chat
+      if (messages.length > 0 && isInitialized) {
+        setIsStreaming(true);
+      }
     }
-  }, [settings.apiKey, videoId]);
+  }, [settings.apiKey, videoId, messages.length, isInitialized]);
 
   useEffect(() => {
     if (isResizing) {
@@ -124,8 +145,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     const loadApiKey = async () => {
+      // Ensure migration runs on startup
+      await storageAdapter.migrateStorage();
+      
       const { openaiApiKey } = await storageAdapter.getApiKey();
       setHasApiKey(!!openaiApiKey);
+      
+      // Check if any provider has been configured
+      const [hasOpenRouter, hasOpenAI] = await Promise.all([
+        storageAdapter.hasProviderKey('openrouter'),
+        storageAdapter.hasProviderKey('openai')
+      ]);
+      setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      
       setIsLoading(false);
     };
     loadApiKey();
@@ -140,9 +172,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
         apiKey: apiKeyUpdate
       };
       setSettings(newSettings);
-      setHasApiKey(true);
+      setHasApiKey(apiKeyUpdate !== null && apiKeyUpdate !== '');
       
-      setApiAdapter(new OpenRouterApiAdapter(apiKeyUpdate, () => storageAdapter.getModelPreferences()));
+      // Re-check if any provider has API key configured
+      const checkProviders = async () => {
+        const [hasOpenRouter, hasOpenAI] = await Promise.all([
+          storageAdapter.hasProviderKey('openrouter'),
+          storageAdapter.hasProviderKey('openai')
+        ]);
+        setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      };
+      checkProviders();
+      
+      // Create adapter using factory with current provider
+      if (settings.provider) {
+        try {
+          const adapter = ApiAdapterFactory.createAdapter(
+            settings.provider,
+            apiKeyUpdate,
+            () => storageAdapter.getModelPreferences()
+          );
+          setApiAdapter(adapter);
+        } catch (error) {
+          console.error('Failed to create API adapter:', error);
+          setApiAdapter(undefined);
+        }
+      }
       
       setIsStreaming(false);
       setHasError(false);
@@ -151,22 +206,154 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [apiKeyUpdate, storageAdapter, settings]);
 
+  // Listen for show settings event from content script
+  useEffect(() => {
+    const handleShowSettings = async (event: CustomEvent) => {
+      console.log('[TubeTalk] Received show settings event:', event.detail);
+      console.log('[TubeTalk] Current provider:', settings.provider);
+      setShowSettings(true);
+      
+      // If a provider was specified, update the settings to reflect the provider switch
+      if (event.detail?.provider) {
+        console.log('[TubeTalk] Provider specified:', event.detail.provider, 'Current:', settings.provider);
+        
+        // Always update provider state when specified, even if it's the same
+        // This ensures state is consistent when coming from onboarding
+        const [newProviderApiKey, hasOpenRouter, hasOpenAI] = await Promise.all([
+          storageAdapter.getProviderApiKey(event.detail.provider),
+          storageAdapter.hasProviderKey('openrouter'),
+          storageAdapter.hasProviderKey('openai')
+        ]);
+        
+        console.log('[TubeTalk] Provider API key check:', {
+          provider: event.detail.provider,
+          hasKey: !!newProviderApiKey,
+          hasOpenRouter,
+          hasOpenAI
+        });
+        
+        // Update settings to reflect the new provider
+        const updatedSettings = {
+          ...settings,
+          provider: event.detail.provider,
+          apiKey: newProviderApiKey || ''
+        };
+        
+        // Update storage to persist the provider change
+        await storageAdapter.setCurrentProvider(event.detail.provider);
+        
+        // Update all state atomically to prevent inconsistencies
+        setSettings(updatedSettings);
+        setHasAnyProvider(hasOpenRouter || hasOpenAI);
+        setHasApiKey(!!updatedSettings.apiKey);
+        
+        console.log('[TubeTalk] Updated state after provider switch:', {
+          provider: updatedSettings.provider,
+          apiKey: updatedSettings.apiKey ? '[REDACTED]' : 'empty',
+          hasApiKey: !!updatedSettings.apiKey,
+          hasAnyProvider: hasOpenRouter || hasOpenAI,
+          hasOpenRouter,
+          hasOpenAI,
+          showSettings: true
+        });
+      }
+    };
+
+    window.addEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+    
+    return () => {
+      window.removeEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+    };
+  }, [setShowSettings, settings, storageAdapter]);
+
   const handleSettingsChange = async (newSettings: SettingsType) => {
     try {
       if (newSettings.isDarkMode !== settings.isDarkMode) {
         document.documentElement.setAttribute('data-theme', newSettings.isDarkMode ? 'dark' : 'light');
       }
 
+      // Track if provider changed to call refresh after state updates
+      const providerChanged = newSettings.provider !== settings.provider;
+
+      // Handle provider change
+      if (providerChanged) {
+        await storageAdapter.setCurrentProvider(newSettings.provider);
+        // Load the API key for the new provider
+        const newProviderApiKey = await storageAdapter.getProviderApiKey(newSettings.provider);
+        newSettings.apiKey = newProviderApiKey || '';
+        
+        // Create new adapter for the new provider
+        try {
+          const adapter = ApiAdapterFactory.createAdapter(
+            newSettings.provider,
+            newSettings.apiKey,
+            () => storageAdapter.getModelPreferences()
+          );
+          setApiAdapter(adapter);
+        } catch (error) {
+          console.error('Failed to create API adapter for new provider:', error);
+          setApiAdapter(undefined);
+        }
+      } else if (newSettings.apiKey !== settings.apiKey) {
+        // Just API key changed, save it to current provider
+        await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
+        // Update adapter with new API key
+        if (newSettings.provider) {
+          try {
+            const adapter = ApiAdapterFactory.createAdapter(
+              newSettings.provider,
+              newSettings.apiKey,
+              () => storageAdapter.getModelPreferences()
+            );
+            setApiAdapter(adapter);
+          } catch (error) {
+            console.error('Failed to create API adapter with new key:', error);
+            setApiAdapter(undefined);
+          }
+        }
+      }
+
       await Promise.all([
         storageAdapter.setDarkMode(newSettings.isDarkMode),
-        storageAdapter.setApiKey(newSettings.apiKey),
         storageAdapter.setShowSponsored(newSettings.showSponsored),
         storageAdapter.setSelectedLocale(newSettings.selectedLocale),
         storageAdapter.setSelectedSummaryLanguage(newSettings.selectedSummaryLanguage),
         storageAdapter.setShowSuggestedQuestions(newSettings.showSuggestedQuestions)
       ]);
 
+      // Re-check if any provider has API key configured whenever settings change
+      const [hasOpenRouter, hasOpenAI] = await Promise.all([
+        storageAdapter.hasProviderKey('openrouter'),
+        storageAdapter.hasProviderKey('openai')
+      ]);
+      setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      setHasApiKey(newSettings.apiKey !== null && newSettings.apiKey !== '');
+
       setSettings(newSettings);
+
+      // Clear chat history when switching providers (after state is updated)
+      if (providerChanged) {
+        // Call refresh with the NEW settings, not the old ones
+        const wasStreaming = isStreaming;
+        
+        setIsStreaming(false);
+        setHasError(false);
+        
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+
+        messagesRef.current?.reset();
+        messagesRef.current?.scrollToTop();
+        setMessages([]);
+        setIsInitialized(false);
+        
+        // Only restart streaming if the NEW provider has an API key
+        if (newSettings.apiKey && videoId && wasStreaming && messages.length > 0) {
+          setIsStreaming(true);
+        }
+      }
 
       if (newSettings.selectedLocale !== settings.selectedLocale) {
         await setLocale(newSettings.selectedLocale);
@@ -228,11 +415,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     messagesRef.current?.reset();
-    
     messagesRef.current?.scrollToTop();
-    
     setMessages([]);
-    
     setIsInitialized(false);
     
     if (settings.apiKey && videoId && wasStreaming && messages.length > 0) {
@@ -351,23 +535,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className={`sidebar__content ${showSettings ? 'hidden' : ''}`}>
-            <Tutorial isVisible={!!settings.apiKey && !videoId} />
-            <Onboarding isVisible={!settings.apiKey} initialHasKey={hasApiKey} />
-            {settings.apiKey && videoId && (
-              <Messages
-                ref={messagesRef}
-                messages={messages}
-                onQuestionClick={handleQuestionClick}
-                videoId={videoId}
-                apiKey={settings.apiKey}
-                storageAdapter={storageAdapter}
-                onMessagesUpdate={setMessages}
-                promptAdapter={promptAdapter}
-                apiAdapter={apiAdapter}
-                onStreamingStateChange={setIsStreaming}
-                onErrorStateChange={setHasError}
-              />
-            )}
+            {/* Compute mutually exclusive visibility states */}
+            {(() => {
+              // Priority 1: Show onboarding if current provider doesn't have an API key
+              const showOnboarding = !settings.apiKey;
+              // Priority 2: Show tutorial only on non-video pages when provider has API key  
+              const showGettingStarted = !!settings.apiKey && !videoId;
+              // Priority 3: Show messages only on video pages when provider has API key
+              const showMessages = !!settings.apiKey && !!videoId;
+
+              return (
+                <>
+                  <GettingStarted isVisible={showGettingStarted} />
+                  <Onboarding isVisible={showOnboarding} initialHasKey={hasApiKey} />
+                  {showMessages && (
+                    <Messages
+                      ref={messagesRef}
+                      messages={messages}
+                      onQuestionClick={handleQuestionClick}
+                      videoId={videoId}
+                      apiKey={settings.apiKey}
+                      storageAdapter={storageAdapter}
+                      onMessagesUpdate={setMessages}
+                      promptAdapter={promptAdapter}
+                      apiAdapter={apiAdapter}
+                      onStreamingStateChange={setIsStreaming}
+                      onErrorStateChange={setHasError}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 

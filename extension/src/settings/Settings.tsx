@@ -46,10 +46,46 @@ export const Settings: React.FC<SettingsProps> = observer(({
     window.open(reviewUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // Initialize store
+  const handleOpenRouterAuth = () => {
+    chrome.runtime.sendMessage({ action: 'start_openrouter_oauth' });
+  };
+
+  const formatModelDisplay = (modelId: string): string => {
+    // For OpenRouter, remove provider prefixes for cleaner display
+    if (settings.provider === 'openrouter' && modelId.includes('/')) {
+      return modelId.split('/').pop() || modelId;
+    }
+    return modelId;
+  };
+
+  const handleProviderChange = (provider: 'openrouter' | 'openai') => {
+    handleSettingChange('provider', provider);
+  };
+
+  // Initialize store and update provider
   useEffect(() => {
-    modelStore.init();
+    const initializeStore = async () => {
+      await modelStore.setProvider(settings.provider || 'openrouter');
+      await modelStore.init();
+    };
+    initializeStore();
   }, []);
+
+  // Update provider in model store when it changes
+  useEffect(() => {
+    const updateProvider = async () => {
+      await modelStore.setProvider(settings.provider || 'openrouter');
+      await modelStore.init();
+    };
+    updateProvider();
+  }, [settings.provider]);
+
+  // Update API key in model store when it changes
+  useEffect(() => {
+    if (settings.apiKey) {
+      modelStore.updateApiKey(settings.provider || 'openrouter', settings.apiKey);
+    }
+  }, [settings.apiKey, settings.provider]);
 
   const BASE_LANGUAGE_OPTIONS: SelectOption[] = [
     { value: 'en', label: 'English' },
@@ -72,35 +108,125 @@ export const Settings: React.FC<SettingsProps> = observer(({
   return (
     <div className="settings" data-testid="settings-panel">
       <div className="settings__content">
+        <div className="settings__input-group settings__provider-group">
+          <h2>{getMessage('providerSelectionLabel') || 'AI Provider'}</h2>
+          <div className="settings__provider-options">
+            <label className="settings__provider-option">
+              <input
+                type="radio"
+                name="provider"
+                value="openrouter"
+                checked={settings.provider === 'openrouter'}
+                onChange={() => handleProviderChange('openrouter')}
+                className="settings__provider-radio"
+              />
+              <div className="settings__provider-label">
+                <span className="settings__provider-name">OpenRouter</span>
+                <span className="settings__provider-description">{getMessage('openRouterDescription') || 'Access multiple AI models'}</span>
+              </div>
+            </label>
+            <label className="settings__provider-option">
+              <input
+                type="radio"
+                name="provider"
+                value="openai"
+                checked={settings.provider === 'openai'}
+                onChange={() => handleProviderChange('openai')}
+                className="settings__provider-radio"
+              />
+              <div className="settings__provider-label">
+                <span className="settings__provider-name">OpenAI</span>
+                <span className="settings__provider-description">{getMessage('openAIDescription') || 'Direct OpenAI API access'}</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <div className="settings__input-group">
           <h2>{getMessage('apiKeyLabel')}</h2>
-          <div className="settings__input-row">
-            <div className="settings__input-wrapper">
-              <input 
-                type="password"
-                value={settings.apiKey}
-                onChange={(e) => handleSettingChange('apiKey', e.target.value)}
-                placeholder={getMessage('apiKeyPlaceholder')}
-                className="settings__input"
-                data-testid="api-key-input"
-              />
-              <div 
-                className="settings__input-status"
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-              >
-                <div className={`settings__status-indicator ${settings.apiKey ? 'active' : ''}`} />
-                {showTooltip && (
-                  <div className="settings__tooltip">
-                    {settings.apiKey ? getMessage('apiKeyLoaded') : 'No API Key Set'}
+          {settings.provider === 'openrouter' ? (
+            <>
+              <div className="settings__input-row">
+                <div className="settings__input-wrapper">
+                  <input 
+                    type="password"
+                    value={settings.apiKey}
+                    onChange={(e) => handleSettingChange('apiKey', e.target.value)}
+                    placeholder={getMessage('apiKeyPlaceholder')}
+                    className="settings__input"
+                    data-testid="api-key-input"
+                  />
+                  <div 
+                    className="settings__input-status"
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    <div className={`settings__status-indicator ${settings.apiKey ? 'active' : ''}`} />
+                    {showTooltip && (
+                      <div className="settings__tooltip">
+                        {settings.apiKey ? getMessage('apiKeyLoaded') : 'No API Key Set'}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+                <button className="settings__save-button" data-testid="save-api-key-button">
+                  {getMessage('saveKeyButton')}
+                </button>
               </div>
-            </div>
-            <button className="settings__save-button" data-testid="save-api-key-button">
-              {getMessage('saveKeyButton')}
-            </button>
-          </div>
+              <button 
+                onClick={handleOpenRouterAuth}
+                className="settings__oauth-button"
+                type="button"
+              >
+                <img 
+                  src="https://openrouter.ai/favicon.ico" 
+                  alt="OpenRouter" 
+                  className="settings__oauth-icon" 
+                />
+                {getMessage('authenticateWithOpenRouter') || 'Authenticate with OpenRouter'}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="settings__input-row">
+                <div className="settings__input-wrapper">
+                  <input 
+                    type="password"
+                    value={settings.apiKey}
+                    onChange={(e) => handleSettingChange('apiKey', e.target.value)}
+                    placeholder={getMessage('openAIApiKeyPlaceholder') || 'sk-...'}
+                    className="settings__input"
+                    data-testid="api-key-input"
+                  />
+                  <div 
+                    className="settings__input-status"
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                  >
+                    <div className={`settings__status-indicator ${settings.apiKey ? 'active' : ''}`} />
+                    {showTooltip && (
+                      <div className="settings__tooltip">
+                        {settings.apiKey ? getMessage('apiKeyLoaded') : 'No API Key Set'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button className="settings__save-button" data-testid="save-api-key-button">
+                  {getMessage('saveKeyButton')}
+                </button>
+              </div>
+              <div className="settings__help-text">
+                <a 
+                  href="https://platform.openai.com/api-keys" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="settings__help-link"
+                >
+                  {getMessage('getOpenAIKey') || 'Get your OpenAI API key'}
+                </a>
+              </div>
+            </>
+          )}
         </div>
 
         <Toggle
@@ -156,25 +282,26 @@ export const Settings: React.FC<SettingsProps> = observer(({
           />
         </div>
 
-        <div className="settings__input-group">
-          <h2>{getMessage('modelSelectionLabel')}</h2>
-          <div className="settings__input-container">
-            <select
-              className={`settings__select ${modelStore.inputError ? 'settings__select--error' : ''}`}
-              value={selectedModel}
-              onChange={(e) => {
-                setSelectedModel(e.target.value);
-                modelStore.clearError();
-              }}
-              data-testid="settings-model-select"
-            >
-              <option value="">{getMessage('settings_model_placeholder')}</option>
-              {modelStore.sortedAvailableModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} ({modelStore.formatPrice(model)})
-                </option>
-              ))}
-            </select>
+        {settings.provider === 'openrouter' && (
+          <div className="settings__input-group">
+            <h2>{getMessage('modelSelectionLabel')}</h2>
+            <div className="settings__input-container">
+              <select
+                className={`settings__select ${modelStore.inputError ? 'settings__select--error' : ''}`}
+                value={selectedModel}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  modelStore.clearError();
+                }}
+                data-testid="settings-model-select"
+              >
+                <option value="">{getMessage('settings_model_placeholder')}</option>
+                {modelStore.sortedAvailableModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({modelStore.formatPrice(model)})
+                  </option>
+                ))}
+              </select>
             <button
               className="settings__add-button"
               onClick={handleAddModel}
@@ -197,7 +324,7 @@ export const Settings: React.FC<SettingsProps> = observer(({
                   data-testid={`model-item-${model}`}
                 >
                   <span>
-                    {model}
+                    {formatModelDisplay(model)}
                     {model === DEFAULT_MODEL && (
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '8px', fontStyle: 'italic' }}>
                         {getMessage('defaultModelLabel')}
@@ -217,7 +344,78 @@ export const Settings: React.FC<SettingsProps> = observer(({
               ))}
             </div>
           </div>
-        </div>
+          </div>
+        )}
+
+        {settings.provider === 'openai' && (
+          <div className="settings__input-group">
+            <h2>{getMessage('openAIModelSelectionLabel') || 'OpenAI Models'}</h2>
+            <div className="settings__input-container">
+              <select
+                className={`settings__select ${modelStore.inputError ? 'settings__select--error' : ''}`}
+                value={selectedModel}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  modelStore.clearError();
+                }}
+                data-testid="settings-model-select"
+              >
+                <option value="">{getMessage('settings_model_placeholder')}</option>
+                {modelStore.sortedAvailableModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="settings__add-button"
+                onClick={handleAddModel}
+                disabled={!selectedModel}
+                data-testid="add-model-button"
+              >
+                {getMessage('settings_add_model')}
+              </button>
+              <div className={`settings__error-message ${modelStore.inputError ? 'settings__error-message--visible' : ''}`}>
+                <span className="settings__error-text">{getMessage('settings_model_duplicate')}</span>
+              </div>
+            </div>
+
+            <div className="settings__models-wrapper">
+              <div className="settings__models-list">
+                {modelStore.models.map((model) => (
+                  <div 
+                    key={model} 
+                    className={`settings__model-item ${model === DEFAULT_MODEL ? 'settings__model-item--default' : ''}`}
+                    data-testid={`model-item-${model}`}
+                  >
+                    <span>
+                      {formatModelDisplay(model)}
+                      {model === DEFAULT_MODEL && (
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '8px', fontStyle: 'italic' }}>
+                          {getMessage('defaultModelLabel')}
+                        </span>
+                      )}
+                    </span>
+                    {model !== DEFAULT_MODEL && (
+                      <button
+                        className="settings__remove-button"
+                        onClick={() => modelStore.removeModel(model)}
+                        data-testid={`remove-model-${model}`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="settings__model-info">
+              <span className="settings__model-info-text">
+                {getMessage('openAIModelInfo') || 'Standard OpenAI rates apply'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

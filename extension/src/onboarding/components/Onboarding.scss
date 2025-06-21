@@ -24,6 +24,107 @@
     max-width: 600px;
   }
 
+  &__subtitle {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  &__subdescription {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    color: var(--text-secondary);
+    max-width: 500px;
+  }
+
+  &__back-button {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  &__provider-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    width: 100%;
+    max-width: 500px;
+    
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+
+  &__provider-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--background-secondary);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border-color: var(--button-primary-background);
+    }
+
+    &:active {
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__provider-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+    object-fit: contain;
+
+    &--openai {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+  }
+
+  &__provider-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+
+  &__provider-description {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
   &__buttons {
     display: flex;
     gap: 16px;
@@ -145,6 +246,22 @@
     background-color: #ffffff;
     border: 1px solid #e8e8e8;
   }
+
+  &__provider-card {
+    background-color: #ffffff;
+    border-color: #e8e8e8;
+    
+    &:hover {
+      border-color: #4285f4;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  &__provider-icon--openai {
+    // OpenAI logo is black, no filter needed for light mode
+    filter: none;
+  }
+
 }
 
 // Dark mode specific styles
@@ -166,5 +283,19 @@
     &:hover {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+  }
+
+  &__provider-card {
+    background-color: var(--background-secondary);
+    border-color: var(--border-color);
+    
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &__provider-icon--openai {
+    // Invert the black OpenAI logo to white for dark mode
+    filter: invert(1) brightness(1);
   }
 }

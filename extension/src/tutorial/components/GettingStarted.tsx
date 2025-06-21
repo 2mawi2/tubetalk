@@ -2,11 +2,11 @@ import React from 'react';
 import { useTranslations } from '../../common/translations/Translations';
 import './Tutorial.scss';
 
-interface TutorialProps {
+interface GettingStartedProps {
   isVisible: boolean;
 }
 
-export const Tutorial: React.FC<TutorialProps> = ({ isVisible }) => {
+export const GettingStarted: React.FC<GettingStartedProps> = ({ isVisible }) => {
   const { getMessage } = useTranslations();
   
   if (!isVisible) return null;

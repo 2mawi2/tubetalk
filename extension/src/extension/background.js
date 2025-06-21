@@ -37,6 +37,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'openrouter_oauth_code') {
     console.log('Received OAuth code, starting exchange');
     exchangeOpenRouterCode(message.code, sender.tab?.id);
+  } else if (message.action === 'open_settings') {
+    console.log('Opening settings with provider:', message.provider);
+    // Send message to open settings panel with pre-selected provider
+    if (sender.tab?.id) {
+      chrome.tabs.sendMessage(sender.tab.id, { 
+        action: 'showSettings',
+        provider: message.provider 
+      });
+    }
   }
   
   return true;

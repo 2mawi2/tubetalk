@@ -116,6 +116,10 @@
       color: var(--text-primary);
       margin: 0;
     }
+
+    &.settings__provider-group {
+      background-color: var(--background-primary);
+    }
   }
 
   &__input-row {
@@ -442,5 +446,118 @@
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-4px); }
     75% { transform: translateX(4px); }
+  }
+
+  // Provider selection styles
+  &__provider-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__provider-option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--input-background);
+
+    &:hover {
+      border-color: var(--input-focus-border);
+      background-color: var(--input-focus-background);
+    }
+
+    &:has(input:checked) {
+      border-color: var(--button-primary-background);
+      background-color: rgba(var(--button-primary-background-rgb), 0.1);
+    }
+  }
+
+  &__provider-radio {
+    margin-right: 12px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--button-primary-background);
+  }
+
+  &__provider-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__provider-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  &__provider-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  // OAuth button styles
+  &__oauth-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    padding: 0 20px;
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--input-focus-background);
+      border-color: var(--input-focus-border);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &__oauth-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &__help-text {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  &__help-link {
+    color: var(--button-primary-background);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__model-info {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  &__model-info-text {
+    display: inline-block;
   }
 } 
