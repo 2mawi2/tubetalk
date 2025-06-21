@@ -9,7 +9,6 @@ import type { StorageAdapter } from '../storage/types';
 import type { Message } from '../messages/components/Messages';
 import { useTranslations } from '../common/translations/Translations';
 import storageAdapter from '../storage/storageAdapter';
-import { DEFAULT_MODEL } from '@src/settings/settingsStorageAdapter';
 
 // Mock chrome API
 (global as any).chrome = {
@@ -35,6 +34,10 @@ vi.mock('../common/adapters/PromptAdapter', () => ({
 vi.mock('../tutorial', () => ({
   useVideoId: () => 'test-video-id',
   Tutorial: () => null
+}));
+
+vi.mock('../onboarding/components/Onboarding', () => ({
+  Onboarding: () => null
 }));
 
 vi.mock('../common/translations/Translations', () => ({
@@ -68,6 +71,20 @@ vi.mock('../messages/MessageInput', () => ({
         <option value="test">Test Model</option>
       </select>
       <textarea data-testid="yt-sidebar-chatInput" disabled={hasError} />
+    </div>
+  ))
+}));
+
+// Mock the Settings component to properly handle changes
+vi.mock('../settings/Settings', () => ({
+  Settings: vi.fn().mockImplementation(({ settings, onSettingsChange }) => (
+    <div>
+      <input
+        type="checkbox"
+        data-testid="dark-mode-toggle"
+        checked={settings.isDarkMode}
+        onChange={(e) => onSettingsChange({ ...settings, isDarkMode: e.target.checked })}
+      />
     </div>
   ))
 }));
@@ -113,7 +130,7 @@ const mockStorageAdapter: StorageAdapter = {
   setProviderModelPreferences: vi.fn().mockResolvedValue(undefined),
   getProviderModelPreferences: vi.fn().mockResolvedValue([]),
   getCurrentProviderConfig: vi.fn().mockResolvedValue({ apiKey: null, modelPreferences: [] }),
-  hasProviderKey: vi.fn().mockResolvedValue(false)
+  hasProviderKey: vi.fn().mockResolvedValue(true)
 };
 
 describe('Sidebar', () => {
@@ -207,7 +224,7 @@ describe('Sidebar', () => {
       expect(state.settings.apiKey).toBe('test-key');
       expect(state.settings.showSponsored).toBe(false);
       expect(state.settings.selectedLocale).toBe('de');
-      expect(state.settings.customModels).toEqual([DEFAULT_MODEL]);
+      expect(state.settings.customModels).toEqual([]);
     });
   });
 
