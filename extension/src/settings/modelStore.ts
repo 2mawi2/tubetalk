@@ -1,10 +1,11 @@
 import { makeAutoObservable, runInAction } from 'mobx'
-import { DEFAULT_MODEL, settingsStorageAdapter } from './settingsStorageAdapter'
+import { DEFAULT_MODEL } from './settingsStorageAdapter'
 import type { OpenRouterModel } from '../common/adapters/ApiAdapter'
 import type { ApiAdapter } from '../common/adapters/ApiAdapter'
 import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter'
 import { OpenAIApiAdapter } from '../common/adapters/OpenAIApiAdapter'
 import type { ProviderType } from '../storage/types'
+import { storageAdapter } from '../storage/storageAdapter'
 
 type ErrorState = { message: string } | null
 
@@ -42,19 +43,27 @@ export class ModelStore {
 
   async init() {
     try {
-      // First fetch available models
+      // First initialize the current provider
+      const currentProvider = await storageAdapter.getCurrentProvider()
+      runInAction(() => {
+        this.currentProvider = currentProvider
+      })
+      
+      // Then fetch available models
       await this.fetchAvailableModels()
       
-      // Then load custom models
-      const customModels = await settingsStorageAdapter.getCustomModels()
+      // Load provider-specific models
+      const providerModels = await storageAdapter.getProviderModelPreferences(this.currentProvider)
       
       runInAction(() => {
-        // Filter out any custom models that aren't in the available models list
-        // and ensure we don't duplicate the default model
-        const validCustomModels = customModels
+        // Filter out any models that aren't in the available models list
+        // Ensure we have the default model and keep valid custom models
+        const validCustomModels = providerModels
           .filter(modelId => modelId !== DEFAULT_MODEL)
           .filter(modelId => 
-            this.availableModels.some(m => m.id === modelId)
+            this.availableModels.some(m => m.id === modelId) || 
+            // Allow models that might be valid for this provider but not yet loaded
+            modelId.includes('gpt-') || modelId.includes('claude-') || modelId.includes('/')
           );
         
         this.models = [DEFAULT_MODEL, ...validCustomModels];
@@ -115,8 +124,9 @@ export class ModelStore {
     }
 
     const updatedModels = [...this.models, modelId]
-    await settingsStorageAdapter.setCustomModels(
-      updatedModels.filter(m => m !== DEFAULT_MODEL)
+    await storageAdapter.setProviderModelPreferences(
+      this.currentProvider,
+      updatedModels
     )
     
     runInAction(() => {
@@ -132,8 +142,9 @@ export class ModelStore {
     }
 
     const updatedModels = this.models.filter(m => m !== model)
-    await settingsStorageAdapter.setCustomModels(
-      updatedModels.filter(m => m !== DEFAULT_MODEL)
+    await storageAdapter.setProviderModelPreferences(
+      this.currentProvider,
+      updatedModels
     )
     
     runInAction(() => {
@@ -148,13 +159,21 @@ export class ModelStore {
       this.currentProvider = provider
       this.availableModels = [] // Clear models when switching providers
     })
-    // Fetch models for the new provider
+    
+    // Update storage with new current provider
+    await storageAdapter.setCurrentProvider(provider)
+    
+    // Load provider-specific models first
+    const providerModels = await storageAdapter.getProviderModelPreferences(provider)
+    runInAction(() => {
+      this.models = providerModels.length > 0 ? providerModels : [DEFAULT_MODEL]
+    })
+    
+    // Then fetch available models for the new provider
     await this.fetchAvailableModels()
   }
 
   async getCurrentAdapter(): Promise<ApiAdapter | null> {
-    // Get storage adapter to access provider-specific API keys
-    const storageAdapter = (await import('../storage/storageAdapter')).storageAdapter;
     
     if (this.currentProvider === 'openrouter') {
       const apiKey = await storageAdapter.getProviderApiKey('openrouter');

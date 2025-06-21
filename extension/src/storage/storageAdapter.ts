@@ -129,12 +129,20 @@ const storageAdapter: StorageAdapter = {
       const legacyApiKey = await this.getStorageValue(STORAGE_KEYS.API_KEY, null);
       const legacyModelPrefs = await this.getStorageValue(STORAGE_KEYS.MODEL_PREFERENCES, DEFAULT_VALUES.MODEL_PREFERENCES);
       
-      if (legacyApiKey) {
+      // Also check for old settingsStorageAdapter custom models
+      const legacyCustomModels = await this.getStorageValue('customModels', []);
+      
+      if (legacyApiKey || legacyCustomModels.length > 0) {
+        // Determine model preferences - use custom models if available, else legacy model prefs
+        const modelsToMigrate = legacyCustomModels.length > 0 
+          ? ["openai/gpt-4.1", ...legacyCustomModels.filter((m: string) => m !== "openai/gpt-4.1")]
+          : legacyModelPrefs;
+        
         // Initialize providers structure with legacy data migrated to openrouter
         const providers: ProvidersConfig = {
           openrouter: {
             apiKey: legacyApiKey,
-            modelPreferences: legacyModelPrefs
+            modelPreferences: modelsToMigrate
           },
           openai: DEFAULT_PROVIDERS.openai
         };

@@ -18,8 +18,11 @@ vi.mock('./settingsStorageAdapter', () => {
 vi.mock('../storage/storageAdapter', () => {
   return {
     storageAdapter: {
+      getCurrentProvider: vi.fn(() => Promise.resolve('openrouter')),
       getProviderApiKey: vi.fn(),
-      getModelPreferences: vi.fn(() => Promise.resolve(['openai/gpt-4.1']))
+      getProviderModelPreferences: vi.fn(() => Promise.resolve(['openai/gpt-4.1'])),
+      setProviderModelPreferences: vi.fn(),
+      setCurrentProvider: vi.fn()
     }
   }
 })
@@ -131,7 +134,7 @@ describe('ModelStore', () => {
     vi.mocked(OpenRouterApiAdapter).mockImplementation(() => mockOpenRouterAdapter as any)
     vi.mocked(OpenAIApiAdapter).mockImplementation(() => mockOpenAIAdapter as any)
     
-    // Reset mock implementations
+    // Reset mock implementations for old storage adapter (still used by some tests)
     mockSettingsStorageAdapter.getCustomModels.mockImplementation(async () => {
       if (storedModels.length > 0) {
         return ['openai/gpt-4.1', ...storedModels]
@@ -144,10 +147,22 @@ describe('ModelStore', () => {
       return Promise.resolve()
     })
     
-    // Mock storage adapter
+    // Mock new storage adapter
+    mockStorageAdapter.getCurrentProvider.mockResolvedValue('openrouter')
     mockStorageAdapter.getProviderApiKey.mockImplementation(async (provider) => {
       return provider === 'openrouter' ? 'openrouter-key' : 'openai-key'
     })
+    mockStorageAdapter.getProviderModelPreferences.mockImplementation(async () => {
+      if (storedModels.length > 0) {
+        return ['openai/gpt-4.1', ...storedModels]
+      }
+      return ['openai/gpt-4.1']
+    })
+    mockStorageAdapter.setProviderModelPreferences.mockImplementation(async (provider, models) => {
+      storedModels = models.filter(m => m !== 'openai/gpt-4.1')
+      return Promise.resolve()
+    })
+    mockStorageAdapter.setCurrentProvider.mockResolvedValue(undefined)
     
     // Mock the available models
     mockOpenRouterAdapter.fetchAvailableModels.mockResolvedValue([
@@ -180,7 +195,8 @@ describe('ModelStore', () => {
   it('initializes with default model', async () => {
     await modelStore.init()
     expect(modelStore.models).toEqual(['openai/gpt-4.1'])
-    expect(mockSettingsStorageAdapter.getCustomModels).toHaveBeenCalled()
+    expect(mockStorageAdapter.getCurrentProvider).toHaveBeenCalled()
+    expect(mockStorageAdapter.getProviderModelPreferences).toHaveBeenCalled()
   })
 
   it('loads custom models on init', async () => {
@@ -218,12 +234,12 @@ describe('ModelStore', () => {
     // Add model
     await modelStore.addModel(customModel)
     expect(modelStore.models).toEqual(['openai/gpt-4.1', customModel])
-    expect(mockSettingsStorageAdapter.setCustomModels).toHaveBeenCalledWith([customModel])
+    expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith('openrouter', ['openai/gpt-4.1', customModel])
     
     // Remove model
     await modelStore.removeModel(customModel)
     expect(modelStore.models).toEqual(['openai/gpt-4.1'])
-    expect(mockSettingsStorageAdapter.setCustomModels).toHaveBeenCalledWith([])
+    expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith('openrouter', ['openai/gpt-4.1'])
   })
 
   it('prevents removing the default model', async () => {
@@ -231,7 +247,8 @@ describe('ModelStore', () => {
     
     await modelStore.removeModel('openai/gpt-4.1')
     expect(modelStore.models).toEqual(['openai/gpt-4.1'])
-    expect(mockSettingsStorageAdapter.setCustomModels).not.toHaveBeenCalled()
+    // Should not call setProviderModelPreferences when trying to remove default model
+    expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledTimes(0)
   })
 
   it('handles empty input gracefully', async () => {
@@ -271,6 +288,110 @@ describe('ModelStore', () => {
     const store2 = new ModelStore()
     await store2.init()
     expect(store2.models).toEqual(['openai/gpt-4.1', 'test-model'])
+  })
+
+  describe('Provider-specific model management', () => {
+    beforeEach(() => {
+      // Setup separate model storage for each provider
+      const providerModels: Record<string, string[]> = {
+        openrouter: ['openai/gpt-4.1'],
+        openai: ['gpt-4-turbo-preview', 'gpt-3.5-turbo']
+      }
+
+      mockStorageAdapter.getProviderModelPreferences.mockImplementation(async (provider) => {
+        return providerModels[provider] || ['openai/gpt-4.1']
+      })
+
+      mockStorageAdapter.setProviderModelPreferences.mockImplementation(async (provider, models) => {
+        providerModels[provider] = models
+        return Promise.resolve()
+      })
+    })
+
+    it('should load models for current provider on init', async () => {
+      // Start with openrouter
+      mockStorageAdapter.getCurrentProvider.mockResolvedValue('openrouter')
+      
+      await modelStore.init()
+      expect(modelStore.models).toEqual(['openai/gpt-4.1'])
+      expect(modelStore.currentProvider).toBe('openrouter')
+    })
+
+    it('should switch models when provider changes', async () => {
+      await modelStore.init()
+      
+      // Add a model to openrouter
+      await modelStore.addModel('anthropic/claude-3-haiku')
+      expect(modelStore.models).toEqual(['openai/gpt-4.1', 'anthropic/claude-3-haiku'])
+
+      // Switch to OpenAI
+      await modelStore.setProvider('openai')
+      
+      // Should see different models
+      expect(modelStore.currentProvider).toBe('openai')
+      expect(modelStore.models).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo'])
+      expect(mockStorageAdapter.setCurrentProvider).toHaveBeenCalledWith('openai')
+    })
+
+    it('should maintain separate model lists per provider', async () => {
+      await modelStore.init()
+      
+      // Add model to openrouter
+      await modelStore.addModel('anthropic/claude-3-haiku')
+      expect(modelStore.models).toEqual(['openai/gpt-4.1', 'anthropic/claude-3-haiku'])
+      expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith(
+        'openrouter', 
+        ['openai/gpt-4.1', 'anthropic/claude-3-haiku']
+      )
+
+      // Switch to OpenAI and add different model
+      await modelStore.setProvider('openai')
+      await modelStore.addModel('gpt-4')
+      expect(modelStore.models).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo', 'gpt-4'])
+      expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith(
+        'openai', 
+        ['gpt-4-turbo-preview', 'gpt-3.5-turbo', 'gpt-4']
+      )
+
+      // Switch back to openrouter - should see original models
+      await modelStore.setProvider('openrouter')
+      expect(modelStore.models).toEqual(['openai/gpt-4.1', 'anthropic/claude-3-haiku'])
+    })
+
+    it('should only affect current provider when adding models', async () => {
+      await modelStore.init() // starts with openrouter
+      
+      await modelStore.addModel('test-model')
+      
+      // Should only update openrouter models
+      expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith(
+        'openrouter',
+        ['openai/gpt-4.1', 'test-model']
+      )
+      expect(mockStorageAdapter.setProviderModelPreferences).not.toHaveBeenCalledWith(
+        'openai',
+        expect.any(Array)
+      )
+    })
+
+    it('should only affect current provider when removing models', async () => {
+      await modelStore.init()
+      await modelStore.addModel('test-model')
+      
+      vi.clearAllMocks() // Clear previous calls
+      
+      await modelStore.removeModel('test-model')
+      
+      // Should only update openrouter models
+      expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith(
+        'openrouter',
+        ['openai/gpt-4.1']
+      )
+      expect(mockStorageAdapter.setProviderModelPreferences).not.toHaveBeenCalledWith(
+        'openai',
+        expect.any(Array)
+      )
+    })
   })
 
   it('should format price correctly for OpenRouter', () => {
