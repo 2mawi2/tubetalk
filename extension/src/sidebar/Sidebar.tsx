@@ -506,23 +506,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className={`sidebar__content ${showSettings ? 'hidden' : ''}`}>
-            <GettingStarted isVisible={!!settings.apiKey && !videoId} />
-            <Onboarding isVisible={!hasAnyProvider || !settings.apiKey} initialHasKey={hasApiKey} />
-            {settings.apiKey && videoId && (
-              <Messages
-                ref={messagesRef}
-                messages={messages}
-                onQuestionClick={handleQuestionClick}
-                videoId={videoId}
-                apiKey={settings.apiKey}
-                storageAdapter={storageAdapter}
-                onMessagesUpdate={setMessages}
-                promptAdapter={promptAdapter}
-                apiAdapter={apiAdapter}
-                onStreamingStateChange={setIsStreaming}
-                onErrorStateChange={setHasError}
-              />
-            )}
+            {/* Compute mutually exclusive visibility states */}
+            {(() => {
+              // Priority 1: Show onboarding if no providers configured or current provider has no key
+              const showOnboarding = !hasAnyProvider || !settings.apiKey;
+              // Priority 2: Show getting started only if onboarding not shown AND has key AND no video
+              const showGettingStarted = !showOnboarding && !!settings.apiKey && !videoId;
+              // Priority 3: Show messages only if has key AND on video page
+              const showMessages = !showOnboarding && !!settings.apiKey && !!videoId;
+
+              return (
+                <>
+                  <GettingStarted isVisible={showGettingStarted} />
+                  <Onboarding isVisible={showOnboarding} initialHasKey={hasApiKey} />
+                  {showMessages && (
+                    <Messages
+                      ref={messagesRef}
+                      messages={messages}
+                      onQuestionClick={handleQuestionClick}
+                      videoId={videoId}
+                      apiKey={settings.apiKey}
+                      storageAdapter={storageAdapter}
+                      onMessagesUpdate={setMessages}
+                      promptAdapter={promptAdapter}
+                      apiAdapter={apiAdapter}
+                      onStreamingStateChange={setIsStreaming}
+                      onErrorStateChange={setHasError}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
