@@ -5,6 +5,7 @@ import type { ApiAdapter } from '../common/adapters/ApiAdapter'
 import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter'
 import { OpenAIApiAdapter } from '../common/adapters/OpenAIApiAdapter'
 import type { ProviderType } from '../storage/types'
+import type { StorageAdapter } from '../storage/types'
 import { storageAdapter } from '../storage/storageAdapter'
 
 type ErrorState = { message: string } | null

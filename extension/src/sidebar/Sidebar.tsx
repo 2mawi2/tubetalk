@@ -123,9 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     if (settings.apiKey && videoId) {
-      setIsStreaming(true);
+      // Only auto-start streaming if we have messages and are initialized
+      // This prevents auto-streaming after provider switches that clear the chat
+      if (messages.length > 0 && isInitialized) {
+        setIsStreaming(true);
+      }
     }
-  }, [settings.apiKey, videoId]);
+  }, [settings.apiKey, videoId, messages.length, isInitialized]);
 
   useEffect(() => {
     if (isResizing) {
@@ -277,6 +281,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         // Load the API key for the new provider
         const newProviderApiKey = await storageAdapter.getProviderApiKey(newSettings.provider);
         newSettings.apiKey = newProviderApiKey || '';
+        
         // Create new adapter for the new provider
         try {
           const adapter = ApiAdapterFactory.createAdapter(
@@ -328,7 +333,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       // Clear chat history when switching providers (after state is updated)
       if (providerChanged) {
-        onClickRefresh();
+        // Call refresh with the NEW settings, not the old ones
+        const wasStreaming = isStreaming;
+        
+        setIsStreaming(false);
+        setHasError(false);
+        
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+
+        messagesRef.current?.reset();
+        messagesRef.current?.scrollToTop();
+        setMessages([]);
+        setIsInitialized(false);
+        
+        // Only restart streaming if the NEW provider has an API key
+        if (newSettings.apiKey && videoId && wasStreaming && messages.length > 0) {
+          setIsStreaming(true);
+        }
       }
 
       if (newSettings.selectedLocale !== settings.selectedLocale) {
@@ -391,11 +415,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     messagesRef.current?.reset();
-    
     messagesRef.current?.scrollToTop();
-    
     setMessages([]);
-    
     setIsInitialized(false);
     
     if (settings.apiKey && videoId && wasStreaming && messages.length > 0) {
