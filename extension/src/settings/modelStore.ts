@@ -56,17 +56,24 @@ export class ModelStore {
       const providerModels = await storageAdapter.getProviderModelPreferences(this.currentProvider)
       
       runInAction(() => {
-        // Filter out any models that aren't in the available models list
-        // Ensure we have the default model and keep valid custom models
-        const validCustomModels = providerModels
-          .filter(modelId => modelId !== DEFAULT_MODEL)
-          .filter(modelId => 
-            this.availableModels.some(m => m.id === modelId) || 
-            // Allow models that might be valid for this provider but not yet loaded
-            modelId.includes('gpt-') || modelId.includes('claude-') || modelId.includes('/')
-          );
-        
-        this.models = [DEFAULT_MODEL, ...validCustomModels];
+        // If we have available models, filter custom models to only valid ones
+        // Otherwise, keep all models from storage (when no API key)
+        if (this.availableModels.length > 0) {
+          const validCustomModels = providerModels
+            .filter(modelId => modelId !== DEFAULT_MODEL)
+            .filter(modelId => 
+              this.availableModels.some(m => m.id === modelId) || 
+              // Allow models that might be valid for this provider but not yet loaded
+              modelId.includes('gpt-') || modelId.includes('claude-') || modelId.includes('/')
+            );
+          
+          this.models = [DEFAULT_MODEL, ...validCustomModels];
+        } else {
+          // No available models (no API key), just use stored preferences
+          this.models = providerModels.includes(DEFAULT_MODEL) 
+            ? providerModels 
+            : [DEFAULT_MODEL, ...providerModels.filter(m => m !== DEFAULT_MODEL)];
+        }
         this.error = null;
         this.inputError = false;
       })
@@ -83,7 +90,12 @@ export class ModelStore {
     try {
       const adapter = await this.getCurrentAdapter()
       if (!adapter) {
-        throw new Error('No API adapter available')
+        // No API key, just set empty available models but keep the default
+        runInAction(() => {
+          this.availableModels = []
+          this.isLoading = false
+        })
+        return
       }
       
       const models = await adapter.fetchAvailableModels()

@@ -50,6 +50,14 @@ export const Settings: React.FC<SettingsProps> = observer(({
     chrome.runtime.sendMessage({ action: 'start_openrouter_oauth' });
   };
 
+  const formatModelDisplay = (modelId: string): string => {
+    // For OpenRouter, remove provider prefixes for cleaner display
+    if (settings.provider === 'openrouter' && modelId.includes('/')) {
+      return modelId.split('/').pop() || modelId;
+    }
+    return modelId;
+  };
+
   const handleProviderChange = (provider: 'openrouter' | 'openai') => {
     handleSettingChange('provider', provider);
   };
@@ -312,7 +320,7 @@ export const Settings: React.FC<SettingsProps> = observer(({
                   data-testid={`model-item-${model}`}
                 >
                   <span>
-                    {model}
+                    {formatModelDisplay(model)}
                     {model === DEFAULT_MODEL && (
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '8px', fontStyle: 'italic' }}>
                         {getMessage('defaultModelLabel')}
@@ -377,7 +385,7 @@ export const Settings: React.FC<SettingsProps> = observer(({
                     data-testid={`model-item-${model}`}
                   >
                     <span>
-                      {model}
+                      {formatModelDisplay(model)}
                       {model === DEFAULT_MODEL && (
                         <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginLeft: '8px', fontStyle: 'italic' }}>
                           {getMessage('defaultModelLabel')}

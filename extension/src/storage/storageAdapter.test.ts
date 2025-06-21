@@ -47,8 +47,8 @@ describe('storageAdapter', () => {
       const result = await storageAdapter.getModelPreferences();
       
       expect(result).toEqual(DEFAULT_VALUES.MODEL_PREFERENCES);
-      expect(result[0]).toBe('openai/gpt-4.1');
-      expect(result[1]).toBe('openai/gpt-4o-mini');
+      expect(result[0]).toBe('gpt-4o');
+      expect(result[1]).toBe('gpt-4o-mini');
     });
 
     it('should return stored model preferences if they exist', async () => {

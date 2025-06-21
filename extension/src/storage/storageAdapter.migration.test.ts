@@ -58,7 +58,7 @@ describe('Storage Migration', () => {
       
       // Check openai has defaults
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4o', 'gpt-4o-mini']);
 
       // Verify current provider was set to openrouter
       const providerCall = mockChromeStorage.sync.set.mock.calls.find(
@@ -110,14 +110,14 @@ describe('Storage Migration', () => {
       // Check openrouter has the migrated custom models (prioritized over legacy modelPreferences)
       expect(providers.openrouter.apiKey).toBe('sk-test-key-123');
       expect(providers.openrouter.modelPreferences).toEqual([
-        'openai/gpt-4.1', 
+        'gpt-4o', 
         'anthropic/claude-3-haiku', 
         'meta-llama/llama-3-8b'
       ]);
       
       // Check openai has defaults
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4o', 'gpt-4o-mini']);
     });
 
     it('should migrate user with only custom models (no API key)', async () => {
@@ -153,7 +153,7 @@ describe('Storage Migration', () => {
       // Check openrouter has the custom models even without API key
       expect(providers.openrouter.apiKey).toBeNull();
       expect(providers.openrouter.modelPreferences).toEqual([
-        'openai/gpt-4.1', 
+        'gpt-4o', 
         'anthropic/claude-3-haiku'
       ]);
     });
@@ -181,9 +181,9 @@ describe('Storage Migration', () => {
       
       // Check both providers have default values
       expect(providers.openrouter.apiKey).toBeNull();
-      expect(providers.openrouter.modelPreferences).toEqual(['openai/gpt-4.1', 'openai/gpt-4o-mini']);
+      expect(providers.openrouter.modelPreferences).toEqual(['gpt-4o', 'gpt-4o-mini']);
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4o', 'gpt-4o-mini']);
 
       // Verify current provider defaults to openrouter
       const providerCall = mockChromeStorage.sync.set.mock.calls.find(
