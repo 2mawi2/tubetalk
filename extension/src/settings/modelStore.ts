@@ -41,19 +41,22 @@ export class ModelStore {
     return `$${total.toFixed(2)}M`
   }
 
-  async init() {
+  async init(storageAdapterParam?: StorageAdapter) {
+    const adapter = storageAdapterParam || storageAdapter;
     try {
-      // First initialize the current provider
-      const currentProvider = await storageAdapter.getCurrentProvider()
-      runInAction(() => {
-        this.currentProvider = currentProvider
-      })
+      // Use the current provider if already set, otherwise get from storage
+      if (!this.currentProvider) {
+        const currentProvider = await adapter.getCurrentProvider()
+        runInAction(() => {
+          this.currentProvider = currentProvider
+        })
+      }
       
       // Then fetch available models
       await this.fetchAvailableModels()
       
       // Load provider-specific models
-      const providerModels = await storageAdapter.getProviderModelPreferences(this.currentProvider)
+      const providerModels = await adapter.getProviderModelPreferences(this.currentProvider)
       
       runInAction(() => {
         // Always ensure DEFAULT_MODEL is first in the list
@@ -167,23 +170,16 @@ export class ModelStore {
     })
   }
 
-  async setProvider(provider: ProviderType) {
+  async setProvider(provider: ProviderType, storageAdapterParam?: StorageAdapter) {
+    const adapter = storageAdapterParam || storageAdapter;
+    
     runInAction(() => {
       this.currentProvider = provider
       this.availableModels = [] // Clear models when switching providers
     })
     
     // Update storage with new current provider
-    await storageAdapter.setCurrentProvider(provider)
-    
-    // Load provider-specific models first
-    const providerModels = await storageAdapter.getProviderModelPreferences(provider)
-    runInAction(() => {
-      this.models = providerModels.length > 0 ? providerModels : [DEFAULT_MODEL]
-    })
-    
-    // Then fetch available models for the new provider
-    await this.fetchAvailableModels()
+    await adapter.setCurrentProvider(provider)
   }
 
   async getCurrentAdapter(): Promise<ApiAdapter | null> {

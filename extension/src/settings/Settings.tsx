@@ -73,7 +73,11 @@ export const Settings: React.FC<SettingsProps> = observer(({
 
   // Update provider in model store when it changes
   useEffect(() => {
-    modelStore.setProvider(settings.provider || 'openrouter');
+    const updateProvider = async () => {
+      await modelStore.setProvider(settings.provider || 'openrouter');
+      await modelStore.init();
+    };
+    updateProvider();
   }, [settings.provider]);
 
   // Update API key in model store when it changes
