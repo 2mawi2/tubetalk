@@ -23,13 +23,28 @@ describe('OpenAIApiAdapter', () => {
     it('should fetch and filter OpenAI models from API', async () => {
       const mockResponse = {
         data: [
+          // Text chat models that should be included
           { id: 'gpt-4o', created: 123456 },
           { id: 'gpt-4o-mini', created: 123456 },
           { id: 'gpt-4-turbo', created: 123456 },
           { id: 'gpt-3.5-turbo', created: 123456 },
-          { id: 'gpt-3.5-turbo-instruct', created: 123456 }, // Should be filtered out
-          { id: 'gpt-4-0125-preview', created: 123456 }, // Should be filtered out
-          { id: 'text-davinci-003', created: 123456 }, // Should be filtered out
+          { id: 'o1-preview', created: 123456 },
+          { id: 'o1-mini', created: 123456 },
+          { id: 'o3', created: 123456 },
+          { id: 'o3-mini', created: 123456 },
+          
+          // Models that should be filtered out
+          { id: 'gpt-3.5-turbo-instruct', created: 123456 }, // instruct model
+          { id: 'gpt-4-0125-preview', created: 123456 }, // dated version
+          { id: 'text-davinci-003', created: 123456 }, // legacy completion
+          { id: 'whisper-1', created: 123456 }, // audio model
+          { id: 'dall-e-3', created: 123456 }, // image model
+          { id: 'dall-e-2', created: 123456 }, // image model
+          { id: 'text-embedding-3-large', created: 123456 }, // embedding model
+          { id: 'text-embedding-3-small', created: 123456 }, // embedding model
+          { id: 'text-embedding-ada-002', created: 123456 }, // embedding model
+          { id: 'text-moderation-latest', created: 123456 }, // moderation model
+          { id: 'gpt-image-1', created: 123456 }, // image model
         ]
       };
 
@@ -48,7 +63,7 @@ describe('OpenAIApiAdapter', () => {
         }
       });
 
-      expect(models).toHaveLength(4);
+      expect(models).toHaveLength(8); // Should include 8 text chat models
       expect(models).toEqual(expect.arrayContaining([
         expect.objectContaining({
           id: 'gpt-4o',
@@ -69,8 +84,119 @@ describe('OpenAIApiAdapter', () => {
           id: 'gpt-3.5-turbo',
           name: 'GPT-3.5 Turbo',
           context_length: 16385
+        }),
+        expect.objectContaining({
+          id: 'o1-preview',
+          name: 'o1 Preview',
+          context_length: 128000
+        }),
+        expect.objectContaining({
+          id: 'o1-mini',
+          name: 'o1 Mini',
+          context_length: 128000
+        }),
+        expect.objectContaining({
+          id: 'o3',
+          name: 'o3',
+          context_length: 200000
+        }),
+        expect.objectContaining({
+          id: 'o3-mini',
+          name: 'o3 Mini',
+          context_length: 128000
         })
       ]));
+      
+      // Verify excluded models are not in the results
+      const modelIds = models.map(m => m.id);
+      expect(modelIds).not.toContain('whisper-1');
+      expect(modelIds).not.toContain('dall-e-3');
+      expect(modelIds).not.toContain('dall-e-2');
+      expect(modelIds).not.toContain('text-embedding-3-large');
+      expect(modelIds).not.toContain('text-embedding-ada-002');
+      expect(modelIds).not.toContain('text-moderation-latest');
+      expect(modelIds).not.toContain('gpt-3.5-turbo-instruct');
+      expect(modelIds).not.toContain('gpt-4-0125-preview');
+      expect(modelIds).not.toContain('text-davinci-003');
+      expect(modelIds).not.toContain('gpt-image-1');
+    });
+
+    it('should properly filter out non-text chat models', async () => {
+      const mockResponse = {
+        data: [
+          // These should be included
+          { id: 'gpt-4o', created: 123456 },
+          { id: 'o1-preview', created: 123456 },
+          
+          // These should be excluded
+          { id: 'whisper-1', created: 123456 },
+          { id: 'dall-e-3', created: 123456 },
+          { id: 'text-embedding-3-large', created: 123456 },
+          { id: 'text-moderation-stable', created: 123456 },
+          { id: 'text-davinci-003', created: 123456 },
+          { id: 'gpt-3.5-turbo-instruct', created: 123456 },
+          { id: 'gpt-4-0125-preview', created: 123456 },
+        ]
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      const models = await adapter.fetchAvailableModels();
+      
+      expect(models).toHaveLength(2);
+      expect(models.map(m => m.id)).toEqual(['o1-preview', 'gpt-4o']); // Sorted order
+      
+      // Verify all excluded models are not present
+      const modelIds = models.map(m => m.id);
+      ['whisper-1', 'dall-e-3', 'text-embedding-3-large', 'text-moderation-stable', 
+       'text-davinci-003', 'gpt-3.5-turbo-instruct', 'gpt-4-0125-preview'].forEach(excludedId => {
+        expect(modelIds).not.toContain(excludedId);
+      });
+    });
+
+    it('should handle future models dynamically without hardcoding', async () => {
+      const mockResponse = {
+        data: [
+          // Future models that should be included (hypothetical)
+          { id: 'gpt-5', created: 123456 },
+          { id: 'gpt-4o-ultra', created: 123456 },
+          { id: 'o5-mini', created: 123456 },
+          { id: 'gpt-10-turbo', created: 123456 },
+          
+          // Future models that should be excluded
+          { id: 'gpt-5-instruct', created: 123456 }, // instruct variant
+          { id: 'whisper-v3', created: 123456 }, // audio model
+          { id: 'dall-e-4', created: 123456 }, // image model
+          { id: 'text-embedding-4-large', created: 123456 }, // embedding model
+          { id: 'gpt-6-0425-preview', created: 123456 }, // deprecated version pattern
+        ]
+      };
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      });
+
+      const models = await adapter.fetchAvailableModels();
+      
+      // Should include future chat models
+      const modelIds = models.map(m => m.id);
+      expect(modelIds).toContain('gpt-5');
+      expect(modelIds).toContain('gpt-4o-ultra');
+      expect(modelIds).toContain('o5-mini');
+      expect(modelIds).toContain('gpt-10-turbo');
+      
+      // Should exclude non-chat models
+      expect(modelIds).not.toContain('gpt-5-instruct');
+      expect(modelIds).not.toContain('whisper-v3');
+      expect(modelIds).not.toContain('dall-e-4');
+      expect(modelIds).not.toContain('text-embedding-4-large');
+      expect(modelIds).not.toContain('gpt-6-0425-preview');
+      
+      expect(models).toHaveLength(4); // Only the 4 future chat models
     });
 
     it('should handle API errors and return fallback models', async () => {

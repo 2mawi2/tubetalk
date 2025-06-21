@@ -59,15 +59,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
       
       // Filter and transform OpenAI models to match OpenRouterModel interface
       const chatModels = data.data
-        .filter((model: any) => 
-          model.id.includes('gpt') && 
-          !model.id.includes('instruct') &&
-          !model.id.includes('0125') && // Exclude dated versions
-          !model.id.includes('0301') &&
-          !model.id.includes('0314') &&
-          !model.id.includes('0613') &&
-          !model.id.includes('1106')
-        )
+        .filter((model: any) => this.isTextChatModel(model))
         .map((model: any) => ({
           id: model.id,
           name: this.formatModelName(model.id),
@@ -81,9 +73,19 @@ export class OpenAIApiAdapter implements ApiAdapter {
           }
         }));
 
-      // Sort by capability (GPT-4 models first)
+      // Sort by capability (latest and most capable models first)
       const sortedModels = chatModels.sort((a: OpenRouterModel, b: OpenRouterModel) => {
-        const order = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'];
+        const order = [
+          'o3',           // Latest reasoning models first
+          'o3-mini',
+          'o1-preview',
+          'o1-mini',
+          'gpt-4o',       // Then GPT-4 family
+          'gpt-4o-mini',
+          'gpt-4-turbo',
+          'gpt-4',
+          'gpt-3.5-turbo' // GPT-3.5 family last
+        ];
         const aIndex = order.findIndex(prefix => a.id.startsWith(prefix));
         const bIndex = order.findIndex(prefix => b.id.startsWith(prefix));
         
@@ -112,7 +114,11 @@ export class OpenAIApiAdapter implements ApiAdapter {
       'gpt-4-turbo-preview': 'GPT-4 Turbo Preview',
       'gpt-4': 'GPT-4',
       'gpt-3.5-turbo': 'GPT-3.5 Turbo',
-      'gpt-3.5-turbo-16k': 'GPT-3.5 Turbo 16K'
+      'gpt-3.5-turbo-16k': 'GPT-3.5 Turbo 16K',
+      'o1-preview': 'o1 Preview',
+      'o1-mini': 'o1 Mini',
+      'o3-mini': 'o3 Mini',
+      'o3': 'o3'
     };
     
     return nameMap[modelId] || modelId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -126,7 +132,11 @@ export class OpenAIApiAdapter implements ApiAdapter {
       'gpt-4-turbo-preview': 128000,
       'gpt-4': 8192,
       'gpt-3.5-turbo': 16385,
-      'gpt-3.5-turbo-16k': 16385
+      'gpt-3.5-turbo-16k': 16385,
+      'o1-preview': 128000,
+      'o1-mini': 128000,
+      'o3-mini': 128000,
+      'o3': 200000
     };
     
     return contextMap[modelId] || 4096;
@@ -140,10 +150,82 @@ export class OpenAIApiAdapter implements ApiAdapter {
       'gpt-4-turbo-preview': 'Preview of GPT-4 Turbo features',
       'gpt-4': 'Original GPT-4 model',
       'gpt-3.5-turbo': 'Fast and efficient model for most tasks',
-      'gpt-3.5-turbo-16k': 'GPT-3.5 with extended context window'
+      'gpt-3.5-turbo-16k': 'GPT-3.5 with extended context window',
+      'o1-preview': 'Advanced reasoning model for complex problems',
+      'o1-mini': 'Faster reasoning model for STEM applications',
+      'o3-mini': 'Efficient reasoning model with enhanced capabilities',
+      'o3': 'Most advanced reasoning model for complex tasks'
     };
     
     return descMap[modelId] || 'OpenAI language model';
+  }
+
+  private isTextChatModel(model: any): boolean {
+    const modelId = model.id.toLowerCase();
+    
+    // First, check for obvious exclusions based on model purpose
+    if (this.isNonTextModel(modelId)) {
+      return false;
+    }
+    
+    // Then check if it's a chat-capable model
+    return this.isChatCapableModel(modelId);
+  }
+
+  private isNonTextModel(modelId: string): boolean {
+    // Patterns that clearly indicate non-text models
+    const nonTextPatterns = [
+      'whisper',           // audio transcription
+      'dall-e',            // image generation  
+      'gpt-image',         // image generation
+      'text-embedding',    // text embeddings
+      'text-moderation',   // content moderation
+      'text-similarity',   // similarity models
+      'code-search',       // code search
+      'text-search',       // text search
+      'edit-',             // text editing models
+      'insert-',           // text insertion models
+    ];
+    
+    return nonTextPatterns.some(pattern => modelId.includes(pattern));
+  }
+
+  private isChatCapableModel(modelId: string): boolean {
+    // Known chat model patterns (more flexible for future models)
+    const chatModelIndicators = [
+      // GPT family chat models
+      { pattern: /^gpt-[3-9]/, exclude: ['instruct', 'davinci', 'curie', 'babbage', 'ada'] },
+      // Reasoning models (o1, o3, future versions)
+      { pattern: /^o[1-9]/, exclude: [] },
+      // Future GPT generations
+      { pattern: /^gpt-[1-9][0-9]/, exclude: ['instruct'] },
+    ];
+    
+    for (const indicator of chatModelIndicators) {
+      if (indicator.pattern.test(modelId)) {
+        // Check if it's not excluded
+        const isExcluded = indicator.exclude.some(excludePattern => 
+          modelId.includes(excludePattern)
+        );
+        
+        if (!isExcluded && !this.isDeprecatedVersion(modelId)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  private isDeprecatedVersion(modelId: string): boolean {
+    // Common deprecated version patterns (MMDD or MMYY format)
+    const deprecatedPatterns = [
+      /\b0[1-9][0-9][0-9]\b/,   // Matches 0125, 0301, 0314, 0425, etc.
+      /\b1[0-2][0-9][0-9]\b/,   // Matches 1106, 1201, etc.
+      /-\d{4}-/,                // Matches any -YYYY- pattern like -2024-
+    ];
+    
+    return deprecatedPatterns.some(pattern => pattern.test(modelId));
   }
 
   private getFallbackModels(): OpenRouterModel[] {
