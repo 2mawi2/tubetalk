@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Sidebar } from './Sidebar';
 import { useSidebarStore } from './sidebarStore';
 import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
-import { OpenRouterApiAdapter } from '../common/adapters/ApiAdapter';
+import { ApiAdapter } from '../common/adapters/ApiAdapter';
 import type { StorageAdapter } from '../storage/types';
 import type { Message } from '../messages/components/Messages';
 import { Messages } from '../messages/components/Messages';
@@ -19,10 +19,20 @@ import storageAdapter from '../storage/storageAdapter';
 };
 
 vi.mock('../common/adapters/ApiAdapter', () => ({
-  OpenRouterApiAdapter: vi.fn().mockImplementation((_: string, getModelPreferences: () => Promise<string[]>) => ({
+  ApiAdapter: vi.fn().mockImplementation(() => ({
     generateStreamResponse: vi.fn(),
-    getModelPreferences
+    fetchAvailableModels: vi.fn().mockResolvedValue([])
   }))
+}));
+
+vi.mock('../common/adapters/ApiAdapterFactory', () => ({
+  ApiAdapterFactory: {
+    createAdapter: vi.fn().mockImplementation((provider: string, apiKey: string, getModelPreferences: () => Promise<string[]>) => ({
+      generateStreamResponse: vi.fn(),
+      fetchAvailableModels: vi.fn().mockResolvedValue([]),
+      getModelPreferences
+    }))
+  }
 }));
 
 vi.mock('../common/adapters/PromptAdapter', () => ({
@@ -259,8 +269,10 @@ describe('Sidebar', () => {
 
     render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
 
+    const { ApiAdapterFactory } = await import('../common/adapters/ApiAdapterFactory');
     await waitFor(() => {
-      expect(OpenRouterApiAdapter).toHaveBeenCalledWith(
+      expect(ApiAdapterFactory.createAdapter).toHaveBeenCalledWith(
+        'openrouter',
         'test-key',
         expect.any(Function)
       );
@@ -397,7 +409,10 @@ describe('Sidebar', () => {
           ...useSidebarStore.getState().settings,
           apiKey: 'test-key'
         },
-        apiAdapter: new OpenRouterApiAdapter('test-key', async () => ['test-model'])
+        apiAdapter: {
+          generateStreamResponse: vi.fn(),
+          fetchAvailableModels: vi.fn().mockResolvedValue([])
+        } as unknown as ApiAdapter
       });
     });
 
@@ -467,6 +482,12 @@ describe('Sidebar', () => {
       await waitFor(() => {
         const state = useSidebarStore.getState();
         expect(state.settings.apiKey).toBe('test-key');
+      });
+
+      // Wait for error state to be triggered
+      await waitFor(() => {
+        const imageButton = screen.getByTestId('image-button');
+        expect(imageButton).toBeDisabled();
       });
 
       const sendButton = screen.getByTestId('send-button');

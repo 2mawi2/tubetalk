@@ -11,7 +11,8 @@ import { Tutorial, useVideoId } from '../tutorial';
 import { Onboarding } from '../onboarding/components/Onboarding';
 import { MessageInput } from '../message-input/MessageInput';
 import { ChromePromptAdapter } from '../common/adapters/PromptAdapter';
-import { MessageContent, OpenRouterApiAdapter } from '../common/adapters/ApiAdapter';
+import { MessageContent } from '../common/adapters/ApiAdapter';
+import { ApiAdapterFactory } from '../common/adapters/ApiAdapterFactory';
 import { useSidebarStore } from './sidebarStore';
 import { Messages, MessagesRef } from '../messages/components/Messages';
 
@@ -61,10 +62,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const apiKeyUpdate = useStorageListener('openaiApiKey');
 
   useEffect(() => {
-    if (isInitialized && settings.apiKey) {
-      setApiAdapter(new OpenRouterApiAdapter(settings.apiKey, () => storageAdapter.getModelPreferences()));
+    if (isInitialized && settings.apiKey && settings.provider) {
+      try {
+        const adapter = ApiAdapterFactory.createAdapter(
+          settings.provider,
+          settings.apiKey,
+          () => storageAdapter.getModelPreferences()
+        );
+        setApiAdapter(adapter);
+      } catch (error) {
+        console.error('Failed to create API adapter:', error);
+        setApiAdapter(undefined);
+      }
     }
-  }, [settings.apiKey, storageAdapter, isInitialized]);
+  }, [settings.apiKey, settings.provider, storageAdapter, isInitialized]);
 
   useEffect(() => {
     const initSettings = async () => {
@@ -160,7 +171,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setHasApiKey(true);
       setHasAnyProvider(true);
       
-      setApiAdapter(new OpenRouterApiAdapter(apiKeyUpdate, () => storageAdapter.getModelPreferences()));
+      // Create adapter using factory with current provider
+      if (settings.provider) {
+        try {
+          const adapter = ApiAdapterFactory.createAdapter(
+            settings.provider,
+            apiKeyUpdate,
+            () => storageAdapter.getModelPreferences()
+          );
+          setApiAdapter(adapter);
+        } catch (error) {
+          console.error('Failed to create API adapter:', error);
+          setApiAdapter(undefined);
+        }
+      }
       
       setIsStreaming(false);
       setHasError(false);
@@ -199,9 +223,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
         if (newSettings.apiKey) {
           await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
         }
+        // Create new adapter for the new provider
+        try {
+          const adapter = ApiAdapterFactory.createAdapter(
+            newSettings.provider,
+            newSettings.apiKey,
+            () => storageAdapter.getModelPreferences()
+          );
+          setApiAdapter(adapter);
+        } catch (error) {
+          console.error('Failed to create API adapter for new provider:', error);
+          setApiAdapter(undefined);
+        }
       } else if (newSettings.apiKey !== settings.apiKey) {
         // Just API key changed, save it to current provider
         await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
+        // Update adapter with new API key
+        if (newSettings.provider) {
+          try {
+            const adapter = ApiAdapterFactory.createAdapter(
+              newSettings.provider,
+              newSettings.apiKey,
+              () => storageAdapter.getModelPreferences()
+            );
+            setApiAdapter(adapter);
+          } catch (error) {
+            console.error('Failed to create API adapter with new key:', error);
+            setApiAdapter(undefined);
+          }
+        }
       }
 
       await Promise.all([
