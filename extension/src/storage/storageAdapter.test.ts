@@ -48,7 +48,7 @@ describe('storageAdapter', () => {
       
       expect(result).toEqual(DEFAULT_VALUES.MODEL_PREFERENCES);
       expect(result[0]).toBe('gpt-4.1');
-      expect(result[1]).toBe('gpt-4o-mini');
+      expect(result).toEqual(['gpt-4.1']);
     });
 
     it('should return stored model preferences if they exist', async () => {

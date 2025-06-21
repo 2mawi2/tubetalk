@@ -168,7 +168,7 @@ describe('ModelStore - Provider Switching', () => {
     await modelStore.init(mockStorageAdapter);
 
     // Try to add the default model
-    await modelStore.addModel(DEFAULT_MODEL, mockStorageAdapter);
+    await modelStore.addModel(DEFAULT_MODEL);
 
     expect(modelStore.error?.message).toBe('duplicateModelError');
     expect(modelStore.inputError).toBe(true);
@@ -185,7 +185,7 @@ describe('ModelStore - Provider Switching', () => {
     const initialModels = [...modelStore.models];
 
     // Try to remove the default model
-    await modelStore.removeModel(DEFAULT_MODEL, mockStorageAdapter);
+    await modelStore.removeModel(DEFAULT_MODEL);
 
     // Models should be unchanged
     expect(modelStore.models).toEqual(initialModels);

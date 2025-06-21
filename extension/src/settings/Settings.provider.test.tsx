@@ -17,6 +17,7 @@ vi.mock('./modelStore', () => ({
   modelStore: {
     models: [],
     availableModels: [],
+    sortedAvailableModels: [],
     isLoading: false,
     error: null,
     inputError: false,
@@ -26,6 +27,7 @@ vi.mock('./modelStore', () => ({
     fetchAvailableModels: vi.fn(),
     addModel: vi.fn(),
     removeModel: vi.fn(),
+    updateApiKey: vi.fn(),
   },
 }));
 
@@ -115,10 +117,22 @@ describe('Settings - Provider Switching with Models', () => {
   });
 
   it('should call setProvider and init when provider changes', async () => {
-    render(<Settings settings={mockSettings} onSettingsChange={mockOnSettingsChange} />);
+    let currentSettings = { ...mockSettings };
+    const mockOnSettingsChangeLocal = vi.fn((key: string, value: any) => {
+      currentSettings = { ...currentSettings, [key]: value };
+    });
+    
+    const { rerender } = render(<Settings settings={currentSettings} onSettingsChange={mockOnSettingsChangeLocal} />);
+    
+    // Clear any initial calls
+    vi.clearAllMocks();
     
     const openAIRadio = screen.getByDisplayValue('openai');
     fireEvent.click(openAIRadio);
+
+    // Simulate the settings change by re-rendering with updated provider
+    const updatedSettings = { ...currentSettings, provider: 'openai' as const };
+    rerender(<Settings settings={updatedSettings} onSettingsChange={mockOnSettingsChangeLocal} />);
 
     await waitFor(() => {
       expect(modelStore.setProvider).toHaveBeenCalledWith('openai');

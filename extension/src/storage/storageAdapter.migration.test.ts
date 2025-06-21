@@ -58,7 +58,7 @@ describe('Storage Migration', () => {
       
       // Check openai has defaults
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1', 'gpt-4o-mini']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1']);
 
       // Verify current provider was set to openrouter
       const providerCall = mockChromeStorage.sync.set.mock.calls.find(
@@ -117,7 +117,7 @@ describe('Storage Migration', () => {
       
       // Check openai has defaults
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1', 'gpt-4o-mini']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1']);
     });
 
     it('should migrate user with only custom models (no API key)', async () => {
@@ -181,9 +181,9 @@ describe('Storage Migration', () => {
       
       // Check both providers have default values
       expect(providers.openrouter.apiKey).toBeNull();
-      expect(providers.openrouter.modelPreferences).toEqual(['gpt-4.1', 'gpt-4o-mini']);
+      expect(providers.openrouter.modelPreferences).toEqual(['gpt-4.1']);
       expect(providers.openai.apiKey).toBeNull();
-      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1', 'gpt-4o-mini']);
+      expect(providers.openai.modelPreferences).toEqual(['gpt-4.1']);
 
       // Verify current provider defaults to openrouter
       const providerCall = mockChromeStorage.sync.set.mock.calls.find(

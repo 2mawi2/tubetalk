@@ -2,7 +2,7 @@
 import type { StorageAdapter, ProviderType, ProviderConfig, ProvidersConfig } from './types';
 
 export const DEFAULT_VALUES = {
-  MODEL_PREFERENCES: ["gpt-4.1", "gpt-4o-mini"] as string[],
+  MODEL_PREFERENCES: ["gpt-4.1"] as string[],
   DARK_MODE: true,
   SHOW_SPONSORED: true,
   INCLUDE_TIMESTAMP: false,
@@ -14,11 +14,11 @@ export const DEFAULT_VALUES = {
 export const DEFAULT_PROVIDERS: ProvidersConfig = {
   openrouter: {
     apiKey: null,
-    modelPreferences: ["gpt-4.1", "gpt-4o-mini"]
+    modelPreferences: ["gpt-4.1"]
   },
   openai: {
     apiKey: null,
-    modelPreferences: ["gpt-4.1", "gpt-4o-mini"]
+    modelPreferences: ["gpt-4.1"]
   }
 };
 

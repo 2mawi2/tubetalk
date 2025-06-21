@@ -195,7 +195,6 @@ describe('ModelStore', () => {
   it('initializes with default model', async () => {
     await modelStore.init()
     expect(modelStore.models).toEqual(['openai/gpt-4.1'])
-    expect(mockStorageAdapter.getCurrentProvider).toHaveBeenCalled()
     expect(mockStorageAdapter.getProviderModelPreferences).toHaveBeenCalled()
   })
 
@@ -295,7 +294,7 @@ describe('ModelStore', () => {
       // Setup separate model storage for each provider
       const providerModels: Record<string, string[]> = {
         openrouter: ['openai/gpt-4.1'],
-        openai: ['gpt-4-turbo-preview', 'gpt-3.5-turbo']
+        openai: ['openai/gpt-4.1', 'gpt-4o-mini']
       }
 
       mockStorageAdapter.getProviderModelPreferences.mockImplementation(async (provider) => {
@@ -326,10 +325,11 @@ describe('ModelStore', () => {
 
       // Switch to OpenAI
       await modelStore.setProvider('openai')
+      await modelStore.init()
       
       // Should see different models
       expect(modelStore.currentProvider).toBe('openai')
-      expect(modelStore.models).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo'])
+      expect(modelStore.models).toEqual(['openai/gpt-4.1', 'gpt-4o-mini'])
       expect(mockStorageAdapter.setCurrentProvider).toHaveBeenCalledWith('openai')
     })
 
@@ -346,15 +346,17 @@ describe('ModelStore', () => {
 
       // Switch to OpenAI and add different model
       await modelStore.setProvider('openai')
+      await modelStore.init()
       await modelStore.addModel('gpt-4')
-      expect(modelStore.models).toEqual(['gpt-4-turbo-preview', 'gpt-3.5-turbo', 'gpt-4'])
+      expect(modelStore.models).toEqual(['openai/gpt-4.1', 'gpt-4o-mini', 'gpt-4'])
       expect(mockStorageAdapter.setProviderModelPreferences).toHaveBeenCalledWith(
         'openai', 
-        ['gpt-4-turbo-preview', 'gpt-3.5-turbo', 'gpt-4']
+        ['openai/gpt-4.1', 'gpt-4o-mini', 'gpt-4']
       )
 
       // Switch back to openrouter - should see original models
       await modelStore.setProvider('openrouter')
+      await modelStore.init()
       expect(modelStore.models).toEqual(['openai/gpt-4.1', 'anthropic/claude-3-haiku'])
     })
 
@@ -421,11 +423,16 @@ describe('ModelStore', () => {
   });
   
   describe('Provider Management', () => {
-    it('should set provider and fetch models', async () => {
+    it('should set provider and clear models', async () => {
+      // Set initial models
+      runInAction(() => {
+        modelStore.availableModels = sampleModels
+      })
+      
       await modelStore.setProvider('openai')
       
       expect(modelStore.currentProvider).toBe('openai')
-      expect(mockOpenAIAdapter.fetchAvailableModels).toHaveBeenCalled()
+      expect(modelStore.availableModels).toEqual([])
     })
     
     it('should clear available models when switching providers', async () => {

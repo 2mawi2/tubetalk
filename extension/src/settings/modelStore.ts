@@ -26,6 +26,9 @@ export class ModelStore {
   }
 
   get sortedAvailableModels() {
+    if (!this.availableModels || this.availableModels.length === 0) {
+      return []
+    }
     return [...this.availableModels].sort((a, b) => {
       return a.name.localeCompare(b.name)
     })
