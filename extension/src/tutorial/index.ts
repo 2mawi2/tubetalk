@@ -1,2 +1,2 @@
-export { Tutorial } from './components/Tutorial';
+export { GettingStarted } from './components/GettingStarted';
 export { useVideoId } from '../common/hooks/useVideoId'; 

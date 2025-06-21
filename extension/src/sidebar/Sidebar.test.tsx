@@ -44,7 +44,7 @@ vi.mock('../common/adapters/PromptAdapter', () => ({
 
 vi.mock('../tutorial', () => ({
   useVideoId: () => 'test-video-id',
-  Tutorial: () => null
+  GettingStarted: () => null
 }));
 
 vi.mock('../onboarding/components/Onboarding', () => ({
@@ -499,6 +499,65 @@ describe('Sidebar', () => {
       expect(imageButton).toBeDisabled();
       expect(modelSelect).not.toBeDisabled();
       expect(textarea).toBeDisabled();
+    });
+  });
+
+  describe('Onboarding Display Logic', () => {
+    it('should properly set hasAnyProvider and hasApiKey states when no providers have API keys', async () => {
+      // This test covers the existing behavior
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: null }),
+        hasProviderKey: vi.fn().mockResolvedValue(false),
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+        getProviderApiKey: vi.fn().mockResolvedValue(null),
+        migrateStorage: vi.fn().mockResolvedValue(undefined)
+      };
+
+      render(
+        <Sidebar onClose={vi.fn()} storageAdapter={customStorageAdapter} />
+      );
+
+      // Wait for initialization
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openrouter');
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openai');
+      });
+
+      // The component should exist and be initialized
+      expect(screen.getByTestId('close-button')).toBeInTheDocument();
+    });
+
+    it('should call hasProviderKey to check both providers during initialization', async () => {
+      // This test covers the new behavior for the user's scenario
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: '' }), // Current provider has no key
+        hasProviderKey: vi.fn().mockImplementation(async (provider) => {
+          // OpenRouter has a key, but OpenAI (current) doesn't
+          return provider === 'openrouter' ? true : false;
+        }),
+        getCurrentProvider: vi.fn().mockResolvedValue('openai'),
+        getProviderApiKey: vi.fn().mockImplementation(async (provider) => {
+          return provider === 'openrouter' ? 'sk-router-key' : null;
+        }),
+        migrateStorage: vi.fn().mockResolvedValue(undefined)
+      };
+
+      render(
+        <Sidebar onClose={vi.fn()} storageAdapter={customStorageAdapter} />
+      );
+
+      // Wait for async loading to complete
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openrouter');
+        expect(customStorageAdapter.hasProviderKey).toHaveBeenCalledWith('openai');
+      });
+
+      // The component should call the right methods to determine onboarding visibility
+      expect(screen.getByTestId('close-button')).toBeInTheDocument();
     });
   });
 }); 

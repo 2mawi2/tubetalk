@@ -222,4 +222,110 @@ describe('Settings Component', () => {
       expect(screen.getByTestId('summary-language-select')).toBeInTheDocument();
     });
   });
+
+  describe('Provider Persistence', () => {
+    it('should persist provider selection when switching providers', async () => {
+      // Start with OpenRouter
+      const { rerender } = renderSettings({ provider: 'openrouter' });
+      
+      // Switch to OpenAI
+      const openAIRadio = screen.getByDisplayValue('openai');
+      fireEvent.click(openAIRadio);
+      
+      // Verify provider change was called on parent
+      await waitFor(() => {
+        expect(mockOnSettingsChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'openai'
+          })
+        );
+      });
+      
+      // Now rerender with the updated provider to simulate parent state update
+      rerender(
+        <TranslationsProvider>
+          <Settings 
+            settings={{ ...defaultSettings, provider: 'openai' }}
+            onSettingsChange={mockOnSettingsChange}
+          />
+        </TranslationsProvider>
+      );
+      
+      // Now verify modelStore.setProvider was called with the new provider
+      await waitFor(() => {
+        expect(modelStore.setProvider).toHaveBeenCalledWith('openai');
+      });
+      
+      // Verify OpenAI is still selected
+      await waitFor(() => {
+        const openAIRadioAfterReopen = screen.getByDisplayValue('openai');
+        expect(openAIRadioAfterReopen).toBeChecked();
+      });
+    });
+
+    it('should persist provider selection when switching back to OpenRouter', async () => {
+      // Start with OpenAI
+      const { rerender } = renderSettings({ provider: 'openai' });
+      
+      // Switch to OpenRouter
+      const openRouterRadio = screen.getByDisplayValue('openrouter');
+      fireEvent.click(openRouterRadio);
+      
+      // Verify provider change was called on parent
+      await waitFor(() => {
+        expect(mockOnSettingsChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'openrouter'
+          })
+        );
+      });
+      
+      // Now rerender with the updated provider to simulate parent state update
+      rerender(
+        <TranslationsProvider>
+          <Settings 
+            settings={{ ...defaultSettings, provider: 'openrouter' }}
+            onSettingsChange={mockOnSettingsChange}
+          />
+        </TranslationsProvider>
+      );
+      
+      // Now verify modelStore.setProvider was called with the new provider
+      await waitFor(() => {
+        expect(modelStore.setProvider).toHaveBeenCalledWith('openrouter');
+      });
+      
+      // Verify OpenRouter is still selected
+      await waitFor(() => {
+        const openRouterRadioAfterReopen = screen.getByDisplayValue('openrouter');
+        expect(openRouterRadioAfterReopen).toBeChecked();
+      });
+    });
+
+    it('should maintain provider-specific configuration when reopening settings', async () => {
+      // Test with OpenAI configuration
+      const { rerender } = renderSettings({ provider: 'openai', apiKey: 'sk-test-key' });
+      
+      // Verify OpenAI-specific UI is shown
+      expect(screen.getByPlaceholderText('sk-...')).toBeInTheDocument();
+      expect(screen.getByText(/OpenAI Models/i)).toBeInTheDocument();
+      
+      // Simulate closing and reopening settings
+      rerender(
+        <TranslationsProvider>
+          <Settings 
+            settings={{ ...defaultSettings, provider: 'openai', apiKey: 'sk-test-key' }}
+            onSettingsChange={mockOnSettingsChange}
+          />
+        </TranslationsProvider>
+      );
+      
+      // Verify OpenAI configuration is still shown
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('openai')).toBeChecked();
+        expect(screen.getByPlaceholderText('sk-...')).toBeInTheDocument();
+        expect(screen.getByText(/OpenAI Models/i)).toBeInTheDocument();
+      });
+    });
+  });
 });

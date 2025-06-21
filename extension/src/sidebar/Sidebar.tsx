@@ -7,7 +7,7 @@ import { IconButton } from '../common/components/IconButton';
 import { useTranslations } from '../common/translations/Translations';
 import { useStorageListener } from '../common/hooks/useStorageListener';
 import './Sidebar.scss';
-import { Tutorial, useVideoId } from '../tutorial';
+import { GettingStarted, useVideoId } from '../tutorial';
 import { Onboarding } from '../onboarding/components/Onboarding';
 import { MessageInput } from '../message-input/MessageInput';
 import { ChromePromptAdapter } from '../common/adapters/PromptAdapter';
@@ -168,8 +168,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         apiKey: apiKeyUpdate
       };
       setSettings(newSettings);
-      setHasApiKey(true);
-      setHasAnyProvider(true);
+      setHasApiKey(apiKeyUpdate !== null && apiKeyUpdate !== '');
+      
+      // Re-check if any provider has API key configured
+      const checkProviders = async () => {
+        const [hasOpenRouter, hasOpenAI] = await Promise.all([
+          storageAdapter.hasProviderKey('openrouter'),
+          storageAdapter.hasProviderKey('openai')
+        ]);
+        setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      };
+      checkProviders();
       
       // Create adapter using factory with current provider
       if (settings.provider) {
@@ -219,10 +228,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       // Handle provider change
       if (newSettings.provider !== settings.provider) {
         await storageAdapter.setCurrentProvider(newSettings.provider);
-        // Save the API key to the new provider's storage
-        if (newSettings.apiKey) {
-          await storageAdapter.setProviderApiKey(newSettings.provider, newSettings.apiKey);
-        }
+        // Load the API key for the new provider
+        const newProviderApiKey = await storageAdapter.getProviderApiKey(newSettings.provider);
+        newSettings.apiKey = newProviderApiKey || '';
         // Create new adapter for the new provider
         try {
           const adapter = ApiAdapterFactory.createAdapter(
@@ -261,6 +269,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         storageAdapter.setSelectedSummaryLanguage(newSettings.selectedSummaryLanguage),
         storageAdapter.setShowSuggestedQuestions(newSettings.showSuggestedQuestions)
       ]);
+
+      // Re-check if any provider has API key configured whenever settings change
+      const [hasOpenRouter, hasOpenAI] = await Promise.all([
+        storageAdapter.hasProviderKey('openrouter'),
+        storageAdapter.hasProviderKey('openai')
+      ]);
+      setHasAnyProvider(hasOpenRouter || hasOpenAI);
+      setHasApiKey(newSettings.apiKey !== null && newSettings.apiKey !== '');
 
       setSettings(newSettings);
 
@@ -447,8 +463,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className={`sidebar__content ${showSettings ? 'hidden' : ''}`}>
-            <Tutorial isVisible={!!settings.apiKey && !videoId} />
-            <Onboarding isVisible={!hasAnyProvider} initialHasKey={hasApiKey} />
+            <GettingStarted isVisible={!!settings.apiKey && !videoId} />
+            <Onboarding isVisible={!hasAnyProvider || !settings.apiKey} initialHasKey={hasApiKey} />
             {settings.apiKey && videoId && (
               <Messages
                 ref={messagesRef}

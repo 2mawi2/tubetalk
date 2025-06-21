@@ -30,8 +30,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ isVisible, initialHasKey
     chrome.runtime.sendMessage({ action: 'start_openrouter_oauth' });
   };
 
-  const handleOpenRouterSelection = () => {
-    setCurrentView('openrouter-steps');
+  const handleOpenRouterSelection = async () => {
+    await storageAdapter.setCurrentProvider('openrouter');
+    chrome.runtime.sendMessage({ action: 'start_openrouter_oauth' });
   };
 
   const handleOpenAISelection = async () => {
