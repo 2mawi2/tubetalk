@@ -32,9 +32,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sass": "^1.89.2",
-    "sharp": "^0.34.1",
+    "sharp": "^0.34.3",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
