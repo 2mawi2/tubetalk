@@ -910,4 +910,74 @@ describe('Messages', () => {
     // Ensure subsequent messages use the conversation history without re-including the video context
     expect(messagesCode).toContain('const conversationMessages = localMessages');
   });
+
+  describe('Direct Messaging Fix', () => {
+    it('should correctly identify first user message with welcome message present', async () => {
+      const mockVideoData = VideoDataBuilder.create().build();
+      vi.mocked(videoDataService.fetchVideoData).mockResolvedValue(mockVideoData);
+      
+      // Mock promptBuilder to verify it's called with correct params
+      const buildChatPromptSpy = vi.spyOn(PromptBuilder.prototype, 'buildChatPrompt');
+      
+      const mockGenerateStreamResponse = vi.fn().mockResolvedValue({
+        read: vi.fn().mockResolvedValue({ done: true, value: new Uint8Array([]) })
+      });
+      
+      const testApiAdapter = {
+        generateStreamResponse: mockGenerateStreamResponse,
+        fetchAvailableModels: vi.fn().mockResolvedValue([])
+      };
+      
+      const ref = React.createRef<MessagesRef>();
+      
+      await act(async () => {
+        render(
+          <Messages
+            ref={ref}
+            messages={[]}
+            videoId="test-video"
+            apiKey="test-key"
+            storageAdapter={mockStorageAdapter}
+            promptAdapter={mockPromptAdapter}
+            apiAdapter={testApiAdapter}
+            onMessagesUpdate={mockOnMessagesUpdate}
+          />
+        );
+      });
+      
+      // Wait for welcome message to be added
+      await waitFor(() => {
+        expect(mockOnMessagesUpdate).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: 'welcome-message',
+              role: 'assistant'
+            })
+          ])
+        );
+      });
+      
+      // Send first user message (with welcome message already present)
+      await act(async () => {
+        if (ref.current) {
+          await ref.current.handleUserMessage('Tell me about this video');
+        }
+      });
+      
+      // Verify buildChatPrompt was called with full video context
+      await waitFor(() => {
+        expect(buildChatPromptSpy).toHaveBeenCalledWith(
+          mockVideoData.title,
+          mockVideoData.description,
+          mockVideoData.transcript,
+          'Tell me about this video'
+        );
+      });
+      
+      // Verify the API was called with messages including video context
+      expect(mockGenerateStreamResponse).toHaveBeenCalled();
+      
+      buildChatPromptSpy.mockRestore();
+    });
+  });
 }); 

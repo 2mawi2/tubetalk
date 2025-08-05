@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [width, setWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [hasAnyProvider, setHasAnyProvider] = useState<boolean>(false);

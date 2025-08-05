@@ -76,7 +76,7 @@ vi.mock('../messages/components/Messages', () => ({
 vi.mock('../message-input/MessageInput', () => ({
   MessageInput: vi.fn().mockImplementation(({ sendDisabled, isStreaming, hasError, disabled }) => (
     <div>
-      <button data-testid="send-button" disabled={sendDisabled || isStreaming || hasError}>Send</button>
+      <button data-testid="send-button" disabled={sendDisabled || isStreaming || hasError || disabled}>Send</button>
       <button data-testid="image-button" disabled={hasError || disabled}>Image</button>
       <select data-testid="model-select">
         <option value="test">Test Model</option>
@@ -815,6 +815,87 @@ describe('Sidebar', () => {
 
       // This test validates that our useEffect only triggers streaming
       // when both messages exist AND component is initialized
+    });
+  });
+
+  describe('Direct Messaging Button Fix', () => {
+    it('should enable send button on initial load when API key is present', async () => {
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+
+      // Mock Messages component to NOT automatically start streaming
+      const MessagesMock = Messages as Mock;
+      MessagesMock.mockImplementation(({ onStreamingStateChange }) => {
+        React.useEffect(() => {
+          // Don't set streaming to true initially - allow direct messaging
+          onStreamingStateChange?.(false);
+        }, [onStreamingStateChange]);
+        return null;
+      });
+
+      render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+
+      // Wait for initialization
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+      });
+
+      // Check that send button is enabled (not disabled)
+      const sendButton = screen.getByTestId('send-button');
+      expect(sendButton).not.toBeDisabled();
+    });
+
+    it('should properly handle streaming state transitions', async () => {
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+
+      // Create a component that we can control streaming state through props
+      let currentStreamingState = false;
+      const MessagesMock = Messages as Mock;
+      MessagesMock.mockImplementation(({ onStreamingStateChange }) => {
+        React.useEffect(() => {
+          onStreamingStateChange?.(currentStreamingState);
+        }, [currentStreamingState, onStreamingStateChange]);
+        return null;
+      });
+      
+      const { rerender } = render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+      });
+
+      // Initially not streaming - button enabled
+      let sendButton = screen.getByTestId('send-button');
+      expect(sendButton).not.toBeDisabled();
+
+      // Start streaming
+      currentStreamingState = true;
+      rerender(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+
+      // Button should be disabled during streaming
+      await waitFor(() => {
+        sendButton = screen.getByTestId('send-button');
+        expect(sendButton).toBeDisabled();
+      });
+
+      // Stop streaming
+      currentStreamingState = false;
+      rerender(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+
+      // Button should be enabled again
+      await waitFor(() => {
+        sendButton = screen.getByTestId('send-button');
+        expect(sendButton).not.toBeDisabled();
+      });
     });
   });
 }); 
