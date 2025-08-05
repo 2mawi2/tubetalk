@@ -565,7 +565,8 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
       const prompts = await promptAdapter.getPrompts();
       const promptBuilder = new PromptBuilder(prompts, null);
 
-      const isFirstUserMessage = localMessages.length === 1 && localMessages[0].id === 'welcome-message';
+      // Check if this is the first user message (no previous user messages exist)
+      const isFirstUserMessage = !localMessages.some(msg => msg.role === 'user');
       
       if (isFirstUserMessage) {
         // First user message: create full context with transcript
