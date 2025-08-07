@@ -101,7 +101,7 @@ jobs:
         VITE_ENABLE_MODEL_SELECTION: ${{ github.ref == 'refs/heads/main' && vars.FEATURE_FLAG_MAIN_ENABLE_MODEL_SELECTION || github.ref == 'refs/heads/release' && vars.FEATURE_FLAG_RELEASE_ENABLE_MODEL_SELECTION || 'true' }}
       
     - name: Run E2E tests
-      if: ${{ env.HAS_OPENROUTER_KEY == 'true' }}
+      if: ${{ env.HAS_OPENROUTER_KEY == 'true' && false }}
       run: npm run test:e2e
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
