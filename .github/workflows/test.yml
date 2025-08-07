@@ -80,6 +80,11 @@ jobs:
 
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
+    
+    - name: Verify Playwright installation
+      run: |
+        npx playwright --version
+        node -e "const { chromium } = require('@playwright/test'); chromium.executablePath ? console.log('Chromium path:', chromium.executablePath()) : console.log('Chromium path not available');"
       
     - name: Build extension
       run: npm run build
