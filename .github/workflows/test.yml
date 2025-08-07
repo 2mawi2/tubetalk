@@ -78,25 +78,30 @@ jobs:
         path: extension/coverage/
         retention-days: 30
 
+    - name: Set E2E environment
+      run: |
+        if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+          echo "HAS_OPENROUTER_KEY=true" >> $GITHUB_ENV
+        else
+          echo "HAS_OPENROUTER_KEY=false" >> $GITHUB_ENV
+        fi
+
     - name: Install Playwright browsers
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
       run: npx playwright install --with-deps chromium
     
     - name: Verify Playwright installation
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
       run: |
         npx playwright --version
         node -e "const { chromium } = require('@playwright/test'); chromium.executablePath ? console.log('Chromium path:', chromium.executablePath()) : console.log('Chromium path not available');"
       
     - name: Build extension
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
       run: npm run build
       env:
         NODE_OPTIONS: "--max_old_space_size=4096"
         VITE_ENABLE_MODEL_SELECTION: ${{ github.ref == 'refs/heads/main' && vars.FEATURE_FLAG_MAIN_ENABLE_MODEL_SELECTION || github.ref == 'refs/heads/release' && vars.FEATURE_FLAG_RELEASE_ENABLE_MODEL_SELECTION || 'true' }}
       
     - name: Run E2E tests
-      if: ${{ secrets.OPENROUTER_API_KEY != '' }}
+      if: ${{ env.HAS_OPENROUTER_KEY == 'true' }}
       run: npm run test:e2e
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -104,7 +109,7 @@ jobs:
         VITE_ENABLE_MODEL_SELECTION: ${{ github.ref == 'refs/heads/main' && vars.FEATURE_FLAG_MAIN_ENABLE_MODEL_SELECTION || github.ref == 'refs/heads/release' && vars.FEATURE_FLAG_RELEASE_ENABLE_MODEL_SELECTION || 'true' }}
         
     - name: Upload E2E test results
-      if: ${{ always() && secrets.OPENROUTER_API_KEY != '' }}
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: playwright-report
@@ -113,9 +118,6 @@ jobs:
           extension/test-results/
         retention-days: 30
 
-    - name: Skip E2E (missing secret)
-      if: ${{ secrets.OPENROUTER_API_KEY == '' }}
-      run: echo "Skipping E2E: OPENROUTER_API_KEY not set for this run"
 
   check-all:
     needs: [tests]
