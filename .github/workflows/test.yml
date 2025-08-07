@@ -127,4 +127,4 @@ jobs:
           if [ "${{ needs.tests.result }}" != "success" ]; then
             echo "Tests job failed"
             exit 1
-          fi# Pipeline trigger
+          fi
