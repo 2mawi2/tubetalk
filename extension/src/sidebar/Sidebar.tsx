@@ -150,14 +150,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [isInitialized, settings.provider, settings.apiKey]);
 
   useEffect(() => {
-    if (settings.apiKey && videoId) {
-      // Only auto-start streaming if we have messages and are initialized
-      // This prevents auto-streaming after provider switches that clear the chat
-      if (messages.length > 0 && isInitialized) {
+    if (settings.apiKey && videoId && isInitialized) {
+      // Only auto-start streaming if the user has already interacted (has a user message)
+      // Avoid disabling the send button when we only show the welcome assistant message
+      const hasUserMessage = messages.some((m) => m.role === 'user');
+      if (hasUserMessage) {
         setIsStreaming(true);
+      } else {
+        setIsStreaming(false);
       }
     }
-  }, [settings.apiKey, videoId, messages.length, isInitialized]);
+  }, [settings.apiKey, videoId, isInitialized, messages]);
 
   useEffect(() => {
     if (isResizing) {
