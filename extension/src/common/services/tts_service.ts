@@ -53,6 +53,11 @@ class OpenAITtsService implements TtsService {
     const arrayBuffer = await response.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
+    
+    if (typeof window === 'undefined' || !(window as any).Audio) {
+      URL.revokeObjectURL(url);
+      throw new Error('Audio API not available');
+    }
     const audio = new (window as any).Audio(url);
     this.currentAudio = audio;
     audio.play().catch(() => {
