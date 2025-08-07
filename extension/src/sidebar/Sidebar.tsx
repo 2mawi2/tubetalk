@@ -15,6 +15,7 @@ import { MessageContent } from '../common/adapters/ApiAdapter';
 import { ApiAdapterFactory } from '../common/adapters/ApiAdapterFactory';
 import { useSidebarStore } from './sidebarStore';
 import { Messages, MessagesRef } from '../messages/components/Messages';
+import { modelStore } from '../settings/modelStore';
 
 interface SidebarProps {
   onClose: () => void;
@@ -108,6 +109,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         setSettings(newSettings);
         setIsInitialized(true);
+
+        // Initialize modelStore globally so chat dropdown has correct models
+        try {
+          await modelStore.setProvider(newSettings.provider);
+          await modelStore.init();
+          if (newSettings.apiKey) {
+            await modelStore.updateApiKey(newSettings.provider, newSettings.apiKey);
+          }
+        } catch (e) {
+          console.warn('[TubeTalk] modelStore init failed:', e);
+        }
       } catch (error) {
         console.error('Error initializing settings:', error);
       }
@@ -120,6 +132,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       cleanupLayout();
     };
   }, [storageAdapter]);
+
+  // Keep modelStore in sync when provider or apiKey changes after init
+  useEffect(() => {
+    if (!isInitialized) return;
+    (async () => {
+      try {
+        await modelStore.setProvider(settings.provider);
+        await modelStore.init();
+        if (settings.apiKey) {
+          await modelStore.updateApiKey(settings.provider, settings.apiKey);
+        }
+      } catch (e) {
+        console.warn('[TubeTalk] modelStore sync failed:', e);
+      }
+    })();
+  }, [isInitialized, settings.provider, settings.apiKey]);
 
   useEffect(() => {
     if (settings.apiKey && videoId) {

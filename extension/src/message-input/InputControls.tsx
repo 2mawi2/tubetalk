@@ -68,14 +68,15 @@ export const InputControls: React.FC<InputControlsProps> = observer(({
             onChange={handleModelChange}
             data-testid="model-select"
           >
-            {modelStore.models.map(modelId => {
+            {Array.from(new Set(selectedModel ? [selectedModel, ...modelStore.models] : [...modelStore.models]))
+              .map(modelId => {
               const model = modelStore.availableModels.find(m => m.id === modelId);
               return (
                 <option key={modelId} value={modelId}>
                   {model ? model.name : modelId}
                 </option>
               );
-            })}
+              })}
           </select>
         )}
         <button 

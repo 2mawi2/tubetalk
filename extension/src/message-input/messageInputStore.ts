@@ -34,10 +34,17 @@ export class MessageInputStore {
 
   async setModel(model: string) {
     if (model) {
-      await storageAdapter.setModelPreferences([model]);
+      
+      const existing = (await storageAdapter.getModelPreferences()) || [];
+      const next = [model, ...existing.filter(m => m !== model)];
+      await storageAdapter.setModelPreferences(next);
       runInAction(() => {
         this.selectedModel = model;
       });
+      
+      if (!modelStore.models.includes(model)) {
+        await modelStore.addModel(model);
+      }
     } else {
       runInAction(() => {
         this.selectedModel = modelStore.models[0];
