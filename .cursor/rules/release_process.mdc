@@ -1,0 +1,21 @@
+---
+alwaysApply: false
+description: Release process for TubeTalk extension
+---
+
+# Release Process
+
+- **Branching**: Releases are created from the `release` branch.
+- **Pre-checks**:
+  - Run `just test` (all tests must pass).
+  - Run `just lint` and fix any issues.
+- **Steps**:
+  1. `git checkout release`
+  2. `git pull origin release`
+  3. `git merge main`
+  4. `git push origin release`
+- CI will build, publish to the Chrome Web Store, create a GitHub release, and bump version.
+- Version is in `extension/manifest.json`; CI bumps patch after publishing.
+
+See [CLAUDE.md](mdc:CLAUDE.md) for details.
+
