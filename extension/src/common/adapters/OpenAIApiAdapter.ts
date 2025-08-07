@@ -12,7 +12,8 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   constructor(
     private apiKey: string,
-    private organizationId?: string
+    private organizationId?: string,
+    private getModelPreferences?: () => Promise<string[]>
   ) {}
 
   async fetchAvailableModels(): Promise<OpenRouterModel[]> {
@@ -334,11 +335,13 @@ export class OpenAIApiAdapter implements ApiAdapter {
         headers['OpenAI-Organization'] = this.organizationId;
       }
 
+      const preferredModel = await this.pickPreferredModel();
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: 'gpt-4.1', // Default to gpt-4.1
+          model: preferredModel,
           messages,
           max_tokens: 3000,
           temperature: 0.1,
@@ -388,6 +391,19 @@ export class OpenAIApiAdapter implements ApiAdapter {
       }
       console.error('OpenAI API Error:', error);
       throw error;
+    }
+  }
+
+  private async pickPreferredModel(): Promise<string> {
+    
+    const fallback = 'gpt-4.1';
+    try {
+      const fromPrefs = (await this.getModelPreferences?.()) || [];
+      
+      const first = fromPrefs.find(m => !m.includes('/'));
+      return first || fallback;
+    } catch {
+      return fallback;
     }
   }
 
