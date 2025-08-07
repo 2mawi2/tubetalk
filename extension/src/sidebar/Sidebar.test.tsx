@@ -897,5 +897,31 @@ describe('Sidebar', () => {
         expect(sendButton).not.toBeDisabled();
       });
     });
+
+    it('does not auto-start streaming when only welcome message exists', async () => {
+      const customStorageAdapter = {
+        ...mockStorageAdapter,
+        getApiKey: vi.fn().mockResolvedValue({ openaiApiKey: 'test-key' }),
+        getCurrentProvider: vi.fn().mockResolvedValue('openrouter'),
+        getProviderApiKey: vi.fn().mockResolvedValue('test-key')
+      };
+
+      render(<Sidebar onClose={() => {}} storageAdapter={customStorageAdapter} />);
+
+      // Wait for initialization
+      await waitFor(() => {
+        expect(customStorageAdapter.getApiKey).toHaveBeenCalled();
+      });
+
+      // Simulate Messages setting a welcome assistant message
+      useSidebarStore.setState({
+        ...useSidebarStore.getState(),
+        messages: [{ id: 'welcome-message', role: 'assistant', content: 'How can I help you with this YouTube video?' }]
+      });
+
+      // Send button should remain enabled (not streaming)
+      const sendButton = await waitFor(() => screen.getByTestId('send-button'));
+      expect(sendButton).not.toBeDisabled();
+    });
   });
 }); 

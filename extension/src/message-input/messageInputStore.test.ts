@@ -56,7 +56,10 @@ describe('MessageInputStore', () => {
       const newModel = 'openai/gpt-4o-mini';
       await store.setModel(newModel);
       expect(store.selectedModel).toBe(newModel);
-      expect(storageAdapter.setModelPreferences).toHaveBeenCalledWith([newModel]);
+      expect(storageAdapter.setModelPreferences).toHaveBeenCalledWith([
+        newModel,
+        'openai/gpt-4.1'
+      ]);
     });
 
     it('uses default model when setModel is called with empty string', async () => {

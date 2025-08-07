@@ -1,0 +1,63 @@
+---
+alwaysApply: true
+description: High-signal TubeTalk project overview, structure, and day-to-day commands
+---
+
+# TubeTalk Project Overview and Structure
+
+- **Purpose**: Chrome extension adding an AI chat/sidebar to YouTube, leveraging OpenRouter/OpenAI.
+- **Workspace root**: `tubetalk/`
+- **Extension code root**: `extension/`
+
+## Development Commands
+
+See [justfile](mdc:justfile). Run from repo root.
+
+```bash
+just install         # Install dependencies (runs in ./extension)
+just dev             # Start dev server (Vite + CRX)
+just build           # Production build to extension/dist
+just preview         # Preview production build
+just test            # Unit tests (vitest)
+just test-e2e        # Playwright E2E tests
+just lint            # ESLint
+just clean           # Clean artifacts (dist, screenshots, test data)
+```
+
+## Architecture Pointers
+
+- **Sidebar (main UI shell)**: [Sidebar.tsx](mdc:extension/src/sidebar/Sidebar.tsx)
+- **Messages (chat + streaming)**: `extension/src/messages/`
+- **Settings UI + stores**: `extension/src/settings/`
+- **Common adapters (API, prompts, services)**:
+  - [ApiAdapter.ts](mdc:extension/src/common/adapters/ApiAdapter.ts)
+  - [OpenAIApiAdapter.ts](mdc:extension/src/common/adapters/OpenAIApiAdapter.ts)
+  - [ApiAdapterFactory.ts](mdc:extension/src/common/adapters/ApiAdapterFactory.ts)
+  - [PromptAdapter.ts](mdc:extension/src/common/adapters/PromptAdapter.ts)
+  - [VideoDataService.ts](mdc:extension/src/common/services/VideoDataService.ts)
+  - [YouTubeTranscriptAPI.ts](mdc:extension/src/common/services/YouTubeTranscriptAPI.ts)
+- **Storage abstraction**: `extension/src/storage/`
+- **Extension entry points**: `extension/src/extension/` (background, content script)
+- **Build output**: `extension/dist/`
+
+## Key Behaviors
+
+- **Model selection and routing**:
+  - Model preferences are provider-specific (OpenRouter vs OpenAI) and read via storage.
+  - Chat uses the first preference for the active provider.
+- **Reasoning support**:
+  - OpenAI gpt-5 / o*-series: uses `max_completion_tokens`, omits `temperature`, and sets `reasoning.effort='low'` when applicable.
+  - OpenRouter: unified `reasoning` parameter is used for OpenAI gpt-5 / o*-series; temperature omitted for these, kept for others.
+
+## Testing
+
+- Unit tests colocated with source.
+- Use vitest + happy-dom. Prefer testing behavior over implementation details.
+- Run `just test` (or `just test -t <filter>` for focused runs).
+
+## Release Flow (Summary)
+
+- Ensure tests and lint are green: `just test`, `just lint`.
+- Merge `main` → `release`, then push release branch.
+- See detailed steps in [CLAUDE.md](mdc:CLAUDE.md) and the dedicated release rule.
+

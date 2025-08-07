@@ -37,6 +37,12 @@ just clean                 # Clean dist, screenshots, and test data
 just distclean            # Clean everything including node_modules
 ```
 
+## Manual Testing Rule
+
+- Always build before manual testing
+  - Run `just build` from repo root after any code/config change
+  - Reload the unpacked extension from `extension/dist` in Chrome (`chrome://extensions` → Reload)
+
 ## Architecture Overview
 
 ### Key Services
@@ -83,6 +89,45 @@ extension/
 │   └── storage/          # Chrome storage adapters
 └── dist/                 # Built extension files
 ```
+
+## Release Process
+
+### Creating a Release
+
+Releases are automated through GitHub Actions when pushing to the `release` branch:
+
+1. **Ensure all tests and linters pass**:
+   ```bash
+   just test          # Run all tests (should show 385+ passing)
+   just lint          # Ensure no linting errors
+   ```
+
+2. **Merge changes to release branch**:
+   ```bash
+   git checkout release
+   git pull origin release
+   git merge main
+   git push origin release
+   ```
+
+3. **Automated Pipeline** will:
+   - Run all tests
+   - Build the extension
+   - Publish to Chrome Web Store
+   - Create GitHub release with changelog
+   - Bump version for next release
+   - Commit version bump back to release branch
+
+4. **Monitor Progress**:
+   - GitHub Actions: https://github.com/2mawi2/tubetalk/actions
+   - Check workflow: `Publish Chrome Extension`
+
+### Version Management
+
+- Version is managed in `extension/manifest.json`
+- Pipeline automatically bumps patch version after release
+- Current version on `release` branch is what gets published
+- Version format: `MAJOR.MINOR.PATCH` (e.g., 1.2.25)
 
 ## Key Considerations
 

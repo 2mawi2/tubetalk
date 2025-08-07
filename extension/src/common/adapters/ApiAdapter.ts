@@ -129,19 +129,7 @@ export class OpenRouterApiAdapter implements ApiAdapter {
           'HTTP-Referer': window.location.href,
           'X-Title': 'YouTube Transcript Summarizer'
         },
-        body: JSON.stringify({
-          models: modelPreferences,
-          route: "fallback",
-          messages: transformedContext.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-            ...(msg.name && { name: msg.name }),
-            ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id })
-          })),
-          max_tokens: 3000,
-          temperature: 0.1,
-          stream: true
-        }),
+        body: JSON.stringify(this.buildOpenRouterBody(modelPreferences, transformedContext)),
         signal
       });
 
@@ -184,6 +172,37 @@ export class OpenRouterApiAdapter implements ApiAdapter {
       console.error('OpenAI API Error:', error);
       throw error;
     }
+  }
+
+  private buildOpenRouterBody(modelPreferences: string[], transformedContext: ConversationMessage[]) {
+    const body: Record<string, any> = {
+      models: modelPreferences,
+      route: 'fallback',
+      messages: transformedContext.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        ...(msg.name && { name: msg.name }),
+        ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id })
+      })),
+      
+      max_tokens: Math.max(64, 3000),
+      stream: true
+    };
+
+    const primary = modelPreferences[0] || '';
+    const isOpenAI = primary.startsWith('openai/');
+    const bare = isOpenAI ? primary.replace('openai/', '') : primary;
+    const isReasoningFamily = bare.startsWith('gpt-5') || bare.startsWith('o1') || bare.startsWith('o2') || bare.startsWith('o3') || bare.startsWith('o4');
+
+    if (isReasoningFamily) {
+      
+      body.reasoning = { effort: 'low' };
+      
+    } else {
+      body.temperature = 0.1;
+    }
+
+    return body;
   }
 
   private transformStreamForErrors(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {

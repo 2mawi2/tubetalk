@@ -14,7 +14,7 @@ export class ApiAdapterFactory {
       case 'openrouter':
         return new OpenRouterApiAdapter(apiKey, getModelPreferences);
       case 'openai':
-        return new OpenAIApiAdapter(apiKey, organizationId);
+        return new OpenAIApiAdapter(apiKey, organizationId, getModelPreferences);
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }
