@@ -408,6 +408,96 @@ describe('OpenAIApiAdapter', () => {
         })
       );
     });
+
+    it('uses max_completion_tokens and omits temperature for gpt-5 family', async () => {
+      const adapterGpt5 = new OpenAIApiAdapter(
+        mockApiKey,
+        undefined,
+        async () => ['gpt-5-mini']
+      );
+
+      const mockResponse = {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: [DONE]\n'));
+            controller.close();
+          }
+        })
+      };
+
+      (global.fetch as any).mockResolvedValueOnce(mockResponse);
+
+      await adapterGpt5.generateStreamResponse(mockMessages);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.openai.com/v1/chat/completions',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"model":"gpt-5-mini"')
+        })
+      );
+
+      const body = JSON.parse((global.fetch as any).mock.calls.at(-1)[1].body);
+      expect(body.max_completion_tokens).toBe(3000);
+      expect(body).not.toHaveProperty('temperature');
+      expect(body.reasoning).toEqual({ effort: 'low' });
+    });
+
+    it('uses max_tokens and includes temperature for gpt-4o-mini', async () => {
+      const adapter4oMini = new OpenAIApiAdapter(
+        mockApiKey,
+        undefined,
+        async () => ['gpt-4o-mini']
+      );
+
+      const mockResponse = {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: [DONE]\n'));
+            controller.close();
+          }
+        })
+      };
+
+      (global.fetch as any).mockResolvedValueOnce(mockResponse);
+
+      await adapter4oMini.generateStreamResponse(mockMessages);
+
+      const body = JSON.parse((global.fetch as any).mock.calls.at(-1)[1].body);
+      expect(body.model).toBe('gpt-4o-mini');
+      expect(body.max_tokens).toBe(3000);
+      expect(body.temperature).toBe(0.1);
+    });
+
+    it('uses max_completion_tokens and omits temperature for o3 models', async () => {
+      const adapterO3 = new OpenAIApiAdapter(
+        mockApiKey,
+        undefined,
+        async () => ['o3']
+      );
+
+      const mockResponse = {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: [DONE]\n'));
+            controller.close();
+          }
+        })
+      };
+
+      (global.fetch as any).mockResolvedValueOnce(mockResponse);
+
+      await adapterO3.generateStreamResponse(mockMessages);
+
+      const body = JSON.parse((global.fetch as any).mock.calls.at(-1)[1].body);
+      expect(body.model).toBe('o3');
+      expect(body.max_completion_tokens).toBe(3000);
+      expect(body).not.toHaveProperty('temperature');
+      expect(body.reasoning).toEqual({ effort: 'low' });
+    });
   });
 
   describe('stream transformation', () => {

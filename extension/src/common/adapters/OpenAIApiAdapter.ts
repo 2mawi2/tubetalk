@@ -340,13 +340,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          model: preferredModel,
-          messages,
-          max_tokens: 3000,
-          temperature: 0.1,
-          stream: true
-        }),
+        body: JSON.stringify(this.buildChatCompletionBody(preferredModel, messages)),
         signal
       });
 
@@ -405,6 +399,40 @@ export class OpenAIApiAdapter implements ApiAdapter {
     } catch {
       return fallback;
     }
+  }
+
+  private requiresMaxCompletionTokens(model: string): boolean {
+    
+    return (
+      model.startsWith('gpt-5') ||
+      model.startsWith('o1') ||
+      model.startsWith('o2') ||
+      model.startsWith('o3') ||
+      model.startsWith('o4')
+    );
+  }
+
+  private buildChatCompletionBody(model: string, messages: any[]) {
+    const usesMaxCompletion = this.requiresMaxCompletionTokens(model);
+    const body: Record<string, any> = {
+      model,
+      messages,
+      stream: true
+    };
+    body[usesMaxCompletion ? 'max_completion_tokens' : 'max_tokens'] = 3000;
+
+    
+    
+    if (!usesMaxCompletion) {
+      body.temperature = 0.1;
+    }
+
+    
+    if (usesMaxCompletion) {
+      body.reasoning = { effort: 'low' };
+    }
+
+    return body;
   }
 
   private transformStreamForErrors(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
