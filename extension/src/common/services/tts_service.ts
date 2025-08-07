@@ -26,7 +26,7 @@ class OpenAITtsService implements TtsService {
 
     if (this.currentAudio) {
       try { this.currentAudio.pause(); } catch (e) { 
-        
+        void e;
       }
       this.currentAudio = null;
     }
@@ -65,7 +65,7 @@ class OpenAITtsService implements TtsService {
     const notifyEnded = () => {
       for (const cb of endedCallbacks) {
         try { cb(); } catch (e) { 
-          
+          void e;
         }
       }
     };
@@ -74,10 +74,10 @@ class OpenAITtsService implements TtsService {
       if (cleaned) return;
       cleaned = true;
       try { audio.pause(); } catch (e) { 
-        
+        void e;
       }
       try { URL.revokeObjectURL(url); } catch (e) { 
-        
+        void e;
       }
       if (this.currentAudio === audio) this.currentAudio = null;
       notifyEnded();
