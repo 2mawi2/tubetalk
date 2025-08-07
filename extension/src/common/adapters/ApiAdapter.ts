@@ -184,7 +184,8 @@ export class OpenRouterApiAdapter implements ApiAdapter {
         ...(msg.name && { name: msg.name }),
         ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id })
       })),
-      max_tokens: 3000,
+      
+      max_tokens: Math.max(64, 3000),
       stream: true
     };
 
