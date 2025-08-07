@@ -62,5 +62,7 @@
     "openAIApiKeyPlaceholder": "sk-...",
     "getOpenAIKey": "OpenAI APIキーを取得",
     "openAIModelSelectionLabel": "OpenAIモデル",
-    "openAIModelInfo": "標準のOpenAI料金が適用されます"
+    "openAIModelInfo": "標準のOpenAI料金が適用されます",
+    "listenButtonTooltip": "再生",
+    "stopButtonTooltip": "停止"
 }

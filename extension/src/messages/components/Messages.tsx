@@ -10,7 +10,8 @@ import { seekToTimestamp } from '../utils/timeUtils';
 import { useTranslations } from '../../common/translations/Translations';
 import { NoCaptionsVideoDataError, DataAccessVideoDataError, ContentModerationVideoDataError } from '../../common/errors/VideoDataError';
 import { MessageService } from '../services/MessageService';
-import { useScrollManager, ScrollState } from './ScrollManager';
+import { useScrollManager } from './ScrollManager';
+import { createTtsService, type TtsService } from '../../common/services/tts_service';
 
 const ScrollButton = ({ onClick, visible }: { onClick: () => void; visible: boolean }) => (
   <button 
@@ -46,6 +47,7 @@ interface MessagesProps {
   onQuestionClick?: (question: string) => void;
   videoId?: string;
   apiKey?: string;
+  provider?: 'openai' | 'openrouter';
   storageAdapter?: any;
   promptAdapter: PromptAdapter;
   apiAdapter?: ApiAdapter;
@@ -64,6 +66,7 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
   messages: initialMessages, 
   videoId, 
   apiKey,
+  provider,
   storageAdapter,
   promptAdapter,
   apiAdapter,
@@ -82,16 +85,16 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
   const containerRef = useRef<HTMLDivElement>(null);
   const initialContextRef = useRef<ConversationMessage[]>([]);
   const handleStreamedTextRef = useRef<(chunk: string, fullMessage: string) => void>(() => {});
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const activeRequestCleanup = useRef<(() => void) | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const ttsServiceRef = useRef<TtsService | null>(null);
 
   const { 
-    scrollState,
     showScrollButton,
     scrollToBottom,
     scrollToTop,
-    isNearBottom
+    // isNearBottom
   } = useScrollManager({
     containerRef,
     messages: localMessages,
@@ -103,6 +106,18 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
     onMessagesUpdate?.(localMessages);
   }, [localMessages, onMessagesUpdate]);
 
+  // Initialize TTS when provider and apiKey change
+  useEffect(() => {
+    ttsServiceRef.current = createTtsService(provider, apiKey ?? null);
+  }, [provider, apiKey]);
+
+  const handleListen = useCallback(async (text: string) => {
+    if (!ttsServiceRef.current || !ttsServiceRef.current.canSynthesize) {
+      throw new Error('TTS not available');
+    }
+    return ttsServiceRef.current.speak(text);
+  }, []);
+
   const cleanup = useCallback(() => {
     if (streamControllerRef.current) {
       streamControllerRef.current.abort();
@@ -110,22 +125,7 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
     }
   }, []);
 
-  const addMessage = useCallback((
-    role: 'user' | 'assistant', 
-    content: string | MessageContent[], 
-    suggestedQuestions?: string[]
-  ) => {
-    const newMessage: Message = {
-      id: `message-${Date.now()}-${Math.random()}`,
-      role,
-      content,
-      suggestedQuestions
-    };
-    
-    setLocalMessages(prev => [...prev, newMessage]);
-    setConversationHistory(prev => [...prev, { role, content }]);
-    return newMessage;
-  }, []);
+  // addMessage helper not used currently
 
   const handleQuestionClick = useCallback(async (question: string) => {
     if (!apiKey || !apiAdapter) {
@@ -765,6 +765,8 @@ export const Messages = forwardRef<MessagesRef, MessagesProps>(({
           isLastMessage={index === memoizedMessages.length - 1}
           videoId={videoId}
           onSummarizeClick={message.id === 'welcome-message' && !summarizeClicked ? initializeSummary : undefined}
+          canListen={provider === 'openai' && !isStreaming}
+          onListen={provider === 'openai' ? handleListen : undefined}
           data-testid={`message-${message.role}${message.id === 'welcome-message' ? '-welcome' : ''}${message.error ? '-error' : ''}${message.loading ? '-loading' : ''}`}
         />
       ))}

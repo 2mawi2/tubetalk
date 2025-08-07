@@ -11,7 +11,9 @@ vi.mock('../../common/translations/Translations', () => ({
         shareTitle: 'Shared from TubeTalk - https://github.com/2mawi2/tubetalk',
         webShareApiNotAvailable: 'Sharing is not available in this browser',
         shareButtonTooltip: 'Share message',
-        copyButtonTooltip: 'Copy message'
+        copyButtonTooltip: 'Copy message',
+        listenButtonTooltip: 'Listen',
+        stopButtonTooltip: 'Stop'
       };
       return translations[key] || key;
     }
@@ -20,7 +22,7 @@ vi.mock('../../common/translations/Translations', () => ({
 
 describe('MessageActions', () => {
   const mockContent = '<p>Test message content</p><ul><li>Item 1</li></ul>';
-  const mockPlainText = 'Test message content\nItem 1';
+  // const mockPlainText = 'Test message content\nItem 1';
   const mockVideoId = 'test123';
   
   const mockClipboard = {
@@ -274,5 +276,84 @@ describe('MessageActions', () => {
     const shareButton = screen.getByTestId('share-button');
     expect(shareButton).toBeDisabled();
     expect(shareButton).toHaveClass('disabled');
+  });
+
+  // ===== TTS (Listen) button tests =====
+  it('renders listen button when canListen is true and onListen is provided', () => {
+    const onListen = vi.fn().mockResolvedValue({ stop: vi.fn() });
+    render(
+      <MessageActions 
+        content={mockContent} 
+        role="assistant" 
+        canListen={true}
+        onListen={onListen}
+      />
+    );
+    const listenButton = screen.getByTestId('listen-button');
+    expect(listenButton).toBeInTheDocument();
+    expect(listenButton).toHaveAttribute('aria-label', 'Listen');
+  });
+
+  it('does not render listen button when canListen is false (e.g., during streaming)', () => {
+    const onListen = vi.fn().mockResolvedValue({ stop: vi.fn() });
+    render(
+      <MessageActions 
+        content={mockContent} 
+        role="assistant" 
+        canListen={false}
+        onListen={onListen}
+      />
+    );
+    expect(screen.queryByTestId('listen-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('stop-button')).not.toBeInTheDocument();
+  });
+
+  it('invokes onListen with plain text (no HTML) and toggles to stop state', async () => {
+    const stop = vi.fn();
+    const onListen = vi.fn().mockResolvedValue({ stop });
+    render(
+      <MessageActions 
+        content={mockContent} 
+        role="assistant" 
+        canListen={true}
+        onListen={onListen}
+      />
+    );
+
+    const listenButton = screen.getByTestId('listen-button');
+    await userEvent.click(listenButton);
+
+    // Should call onListen with plain text (no <p> or <li>)
+    expect(onListen).toHaveBeenCalledWith(expect.stringContaining('Test message content'));
+    expect(onListen).toHaveBeenCalledWith(expect.not.stringContaining('<p>'));
+    expect(onListen).toHaveBeenCalledWith(expect.stringContaining('Item 1'));
+
+    // Should toggle to stop
+    const stopButton = await screen.findByTestId('stop-button');
+    expect(stopButton).toBeInTheDocument();
+    expect(stopButton).toHaveAttribute('aria-label', 'Stop');
+  });
+
+  it('stops playback when stop is clicked and returns to listen state', async () => {
+    const stop = vi.fn();
+    const onListen = vi.fn().mockResolvedValue({ stop });
+    render(
+      <MessageActions 
+        content={mockContent} 
+        role="assistant" 
+        canListen={true}
+        onListen={onListen}
+      />
+    );
+
+    const listenButton = screen.getByTestId('listen-button');
+    await userEvent.click(listenButton);
+
+    const stopButton = await screen.findByTestId('stop-button');
+    await userEvent.click(stopButton);
+
+    expect(stop).toHaveBeenCalled();
+    // Back to listen
+    expect(await screen.findByTestId('listen-button')).toBeInTheDocument();
   });
 }); 

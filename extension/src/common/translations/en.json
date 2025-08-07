@@ -69,5 +69,7 @@
     "openAIApiKeyPlaceholder": "sk-...",
     "getOpenAIKey": "Get your OpenAI API key",
     "openAIModelSelectionLabel": "OpenAI Models",
-    "openAIModelInfo": "Standard OpenAI rates apply"
+    "openAIModelInfo": "Standard OpenAI rates apply",
+    "listenButtonTooltip": "Listen",
+    "stopButtonTooltip": "Stop"
 }

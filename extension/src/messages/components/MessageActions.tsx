@@ -8,15 +8,20 @@ interface MessageActionsProps {
   role: 'assistant' | 'user';
   videoId?: string;
   disabled?: boolean;
+  canListen?: boolean;
+  onListen?: (plainText: string) => Promise<{ stop: () => void; onEnded?: (cb: () => void) => void }>;
 }
 
-export const MessageActions: React.FC<MessageActionsProps> = ({ content, role, videoId, disabled }) => {
+export const MessageActions: React.FC<MessageActionsProps> = ({ content, role, videoId, disabled, canListen, onListen }) => {
   const { getMessage } = useTranslations();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isCopyClicked, setIsCopyClicked] = useState(false);
   const [isShareClicked, setIsShareClicked] = useState(false);
   const [showCopyCheck, setShowCopyCheck] = useState(false);
   const [showShareCheck, setShowShareCheck] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [stopHandle, setStopHandle] = useState<{ stop: () => void; onEnded?: (cb: () => void) => void } | null>(null);
+  const [isTtsLoading, setIsTtsLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,6 +111,56 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ content, role, v
       console.error('Sharing failed:', error);
     }
   };
+
+  const extractPlainText = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.innerText;
+  };
+
+  const handleListen = async () => {
+    if (!onListen || isSpeaking) return;
+    try {
+      setIsTtsLoading(true);
+      const text = extractPlainText(content);
+      const handle = await onListen(text);
+      if (handle && typeof handle.stop === 'function') {
+        setStopHandle(handle);
+        setIsSpeaking(true);
+        // auto reset when audio fully ends
+        if (typeof handle.onEnded === 'function') {
+          handle.onEnded(() => {
+            setIsSpeaking(false);
+            setStopHandle(null);
+          });
+        }
+      }
+    } catch (e) {
+      // swallow to keep UI responsive
+    }
+    finally {
+      setIsTtsLoading(false);
+    }
+  };
+
+  const handleStop = () => {
+    try {
+      stopHandle?.stop();
+    } finally {
+      setIsSpeaking(false);
+      setStopHandle(null);
+    }
+  };
+
+  // Reset copy/share transient animations when TTS state changes
+  useEffect(() => {
+    if (isTtsLoading || isSpeaking) {
+      setIsCopyClicked(false);
+      setShowCopyCheck(false);
+      setIsShareClicked(false);
+      setShowShareCheck(false);
+    }
+  }, [isTtsLoading, isSpeaking]);
 
   if (role !== 'assistant') {
     return null;
@@ -197,6 +252,68 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ content, role, v
           </svg>
         )}
       </button>
+
+      {canListen && onListen && !disabled && !isSpeaking && !isTtsLoading && (
+        <button
+          onClick={handleListen}
+          className={`action-button`}
+          title={getMessage('listenButtonTooltip')}
+          aria-label={getMessage('listenButtonTooltip')}
+          data-testid="listen-button"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M11 5l-4 4H4v6h3l4 4V5z"></path>
+            <path d="M15 9a5 5 0 0 1 0 6"></path>
+            <path d="M17.5 6.5a9 9 0 0 1 0 11"></path>
+          </svg>
+        </button>
+      )}
+
+      {canListen && onListen && !disabled && isTtsLoading && (
+        <button
+          className={`action-button`}
+          title={getMessage('listenButtonTooltip')}
+          aria-label={getMessage('listenButtonTooltip')}
+          data-testid="listen-spinner"
+          disabled
+        >
+          <svg className="spinner" viewBox="0 0 50 50" width="16" height="16">
+            <circle className="path" cx="25" cy="25" r="20" fill="none" strokeWidth="4"></circle>
+          </svg>
+        </button>
+      )}
+
+      {canListen && onListen && !disabled && isSpeaking && !isTtsLoading && (
+        <button
+          onClick={handleStop}
+          className={`action-button`}
+          title={getMessage('stopButtonTooltip')}
+          aria-label={getMessage('stopButtonTooltip')}
+          data-testid="stop-button"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="6" y="6" width="12" height="12"></rect>
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

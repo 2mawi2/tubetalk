@@ -62,5 +62,7 @@
     "openAIApiKeyPlaceholder": "sk-...",
     "getOpenAIKey": "Dapatkan kunci API OpenAI Anda",
     "openAIModelSelectionLabel": "Model OpenAI",
-    "openAIModelInfo": "Tarif standar OpenAI berlaku"
+    "openAIModelInfo": "Tarif standar OpenAI berlaku",
+    "listenButtonTooltip": "Dengarkan",
+    "stopButtonTooltip": "Hentikan"
 }

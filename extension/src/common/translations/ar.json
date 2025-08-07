@@ -62,5 +62,7 @@
     "openAIApiKeyPlaceholder": "sk-...",
     "getOpenAIKey": "احصل على مفتاح OpenAI API الخاص بك",
     "openAIModelSelectionLabel": "نماذج OpenAI",
-    "openAIModelInfo": "تسري الأسعار المعيارية لـ OpenAI"
+    "openAIModelInfo": "تسري الأسعار المعيارية لـ OpenAI",
+    "listenButtonTooltip": "استماع",
+    "stopButtonTooltip": "إيقاف"
 }

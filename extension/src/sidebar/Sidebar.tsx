@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isStreaming, setIsStreaming] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
-  const [hasAnyProvider, setHasAnyProvider] = useState<boolean>(false);
+  const [, setHasAnyProvider] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const { getMessage, setLocale } = useTranslations();
@@ -81,9 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const initSettings = async () => {
       try {
-        const [isDarkMode, apiKeyData, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions, currentProvider] = await Promise.all([
+        const [isDarkMode, showSponsoredValue, localeData, selectedSummaryLanguage, showSuggestedQuestions, currentProvider] = await Promise.all([
           storageAdapter.getDarkMode(),
-          storageAdapter.getApiKey(),
           storageAdapter.getShowSponsored(),
           storageAdapter.getSelectedLocale(),
           storageAdapter.getSelectedSummaryLanguage(),
@@ -239,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Listen for show settings event from content script
   useEffect(() => {
-    const handleShowSettings = async (event: CustomEvent) => {
+    const handleShowSettings = async (event: CustomEvent<any>) => {
       console.log('[TubeTalk] Received show settings event:', event.detail);
       console.log('[TubeTalk] Current provider:', settings.provider);
       setShowSettings(true);
@@ -290,10 +289,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
-    window.addEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+    window.addEventListener('tubetalk-show-settings', handleShowSettings as unknown as EventListener);
     
     return () => {
-      window.removeEventListener('tubetalk-show-settings', handleShowSettings as EventListener);
+      window.removeEventListener('tubetalk-show-settings', handleShowSettings as unknown as EventListener);
     };
   }, [setShowSettings, settings, storageAdapter]);
 
@@ -585,6 +584,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       messages={messages}
                       onQuestionClick={handleQuestionClick}
                       videoId={videoId}
+                      provider={settings.provider}
                       apiKey={settings.apiKey}
                       storageAdapter={storageAdapter}
                       onMessagesUpdate={setMessages}

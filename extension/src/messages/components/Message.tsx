@@ -29,6 +29,8 @@ interface MessageProps {
   isLastMessage?: boolean;
   videoId?: string;
   onSummarizeClick?: () => void;
+  onListen?: (text: string) => Promise<{ stop: () => void; onEnded?: (cb: () => void) => void }>;
+  canListen?: boolean;
   'data-testid'?: string;
 }
 
@@ -40,6 +42,8 @@ const MessageComponent: React.FC<MessageProps> = ({
   isLastMessage, 
   videoId, 
   onSummarizeClick,
+  onListen,
+  canListen,
   'data-testid': dataTestId
 }) => {
   const { getMessage } = useTranslations();
@@ -96,6 +100,8 @@ const MessageComponent: React.FC<MessageProps> = ({
             role={message.role}
             videoId={videoId}
             disabled={isStreaming}
+            canListen={!!canListen && !isStreaming}
+            onListen={onListen}
           />
         )}
       </div>

@@ -62,5 +62,7 @@
     "openAIApiKeyPlaceholder": "sk-...",
     "getOpenAIKey": "अपनी OpenAI API कुंजी प्राप्त करें",
     "openAIModelSelectionLabel": "OpenAI मॉडल",
-    "openAIModelInfo": "मानक OpenAI दरें लागू होती हैं"
+    "openAIModelInfo": "मानक OpenAI दरें लागू होती हैं",
+    "listenButtonTooltip": "सुनें",
+    "stopButtonTooltip": "रोकें"
 }
