@@ -25,7 +25,9 @@ class OpenAITtsService implements TtsService {
     if (!this.apiKey) throw new Error('Missing API key');
 
     if (this.currentAudio) {
-      try { this.currentAudio.pause(); } catch (e) {  }
+      try { this.currentAudio.pause(); } catch (e) { 
+        
+      }
       this.currentAudio = null;
     }
 
@@ -62,15 +64,21 @@ class OpenAITtsService implements TtsService {
     const endedCallbacks: Array<() => void> = [];
     const notifyEnded = () => {
       for (const cb of endedCallbacks) {
-        try { cb(); } catch (e) {  }
+        try { cb(); } catch (e) { 
+          
+        }
       }
     };
 
     const stop = () => {
       if (cleaned) return;
       cleaned = true;
-      try { audio.pause(); } catch (e) {  }
-      try { URL.revokeObjectURL(url); } catch (e) {  }
+      try { audio.pause(); } catch (e) { 
+        
+      }
+      try { URL.revokeObjectURL(url); } catch (e) { 
+        
+      }
       if (this.currentAudio === audio) this.currentAudio = null;
       notifyEnded();
     };
