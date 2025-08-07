@@ -312,6 +312,40 @@ describe('OpenAIApiAdapter', () => {
       );
     });
 
+    it('uses Responses API with reasoning.effort=minimal for gpt-5 family (no temperature)', async () => {
+      const adapterGpt5 = new OpenAIApiAdapter(
+        mockApiKey,
+        undefined,
+        async () => ['gpt-5-mini']
+      );
+
+      const mockResponse = {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            
+            controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.delta","delta":"Hello"}\n'));
+            controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.delta","delta":" world"}\n'));
+            controller.enqueue(new TextEncoder().encode('data: {"type":"response.completed"}\n'));
+            controller.close();
+          }
+        })
+      };
+
+      (global.fetch as any).mockResolvedValueOnce(mockResponse);
+
+      await adapterGpt5.generateStreamResponse(mockMessages as any);
+
+      expect((global.fetch as any).mock.calls[0][0]).toBe('https://api.openai.com/v1/responses');
+      const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
+      expect(body.model).toBe('gpt-5-mini');
+      expect(body.stream).toBe(true);
+      expect(body.reasoning).toEqual({ effort: 'minimal' });
+      expect(body).not.toHaveProperty('temperature');
+      
+      expect(body).not.toHaveProperty('messages');
+    });
+
     it('should handle API errors with proper error messages', async () => {
       const mockErrorResponse = {
         ok: false,
@@ -409,7 +443,7 @@ describe('OpenAIApiAdapter', () => {
       );
     });
 
-    it('uses max_completion_tokens and omits temperature for gpt-5 family', async () => {
+    it('uses Responses API with reasoning minimal for gpt-5 family', async () => {
       const adapterGpt5 = new OpenAIApiAdapter(
         mockApiKey,
         undefined,
@@ -420,7 +454,8 @@ describe('OpenAIApiAdapter', () => {
         ok: true,
         body: new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode('data: [DONE]\n'));
+            controller.enqueue(new TextEncoder().encode('data: {"type":"response.output_text.delta","delta":"hi"}\n'));
+            controller.enqueue(new TextEncoder().encode('data: {"type":"response.completed"}\n'));
             controller.close();
           }
         })
@@ -431,7 +466,7 @@ describe('OpenAIApiAdapter', () => {
       await adapterGpt5.generateStreamResponse(mockMessages);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.openai.com/v1/chat/completions',
+        'https://api.openai.com/v1/responses',
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"model":"gpt-5-mini"')
@@ -439,9 +474,11 @@ describe('OpenAIApiAdapter', () => {
       );
 
       const body = JSON.parse((global.fetch as any).mock.calls.at(-1)[1].body);
-      expect(body.max_completion_tokens).toBe(3000);
+      expect(body).not.toHaveProperty('messages');
+      expect(body.input).toContain('system:');
+      expect(body.max_output_tokens).toBe(3000);
       expect(body).not.toHaveProperty('temperature');
-      expect(body.reasoning).toEqual({ effort: 'low' });
+      expect(body.reasoning).toEqual({ effort: 'minimal' });
     });
 
     it('uses max_tokens and includes temperature for gpt-4o-mini', async () => {

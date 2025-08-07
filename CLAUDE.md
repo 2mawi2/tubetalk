@@ -37,6 +37,12 @@ just clean                 # Clean dist, screenshots, and test data
 just distclean            # Clean everything including node_modules
 ```
 
+## Manual Testing Rule
+
+- Always build before manual testing
+  - Run `just build` from repo root after any code/config change
+  - Reload the unpacked extension from `extension/dist` in Chrome (`chrome://extensions` → Reload)
+
 ## Architecture Overview
 
 ### Key Services

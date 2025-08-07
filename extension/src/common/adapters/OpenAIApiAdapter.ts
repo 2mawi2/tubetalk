@@ -337,10 +337,19 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
       const preferredModel = await this.pickPreferredModel();
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const isGpt5Family = preferredModel.startsWith('gpt-5');
+      const endpoint = isGpt5Family
+        ? 'https://api.openai.com/v1/responses'
+        : 'https://api.openai.com/v1/chat/completions';
+
+      const body = isGpt5Family
+        ? this.buildResponsesBody(preferredModel, messages)
+        : this.buildChatCompletionBody(preferredModel, messages);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify(this.buildChatCompletionBody(preferredModel, messages)),
+        body: JSON.stringify(body),
         signal
       });
 
@@ -375,7 +384,9 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
       if (!response.body) return null;
 
-      const transformedStream = this.transformStreamForErrors(response.body);
+      const transformedStream = isGpt5Family
+        ? this.transformResponsesStream(response.body)
+        : this.transformStreamForErrors(response.body);
       return transformedStream.getReader();
 
     } catch (error: unknown) {
@@ -414,6 +425,7 @@ export class OpenAIApiAdapter implements ApiAdapter {
 
   private buildChatCompletionBody(model: string, messages: any[]) {
     const usesMaxCompletion = this.requiresMaxCompletionTokens(model);
+    const isOReasoningFamily = model.startsWith('o1') || model.startsWith('o2') || model.startsWith('o3') || model.startsWith('o4');
     const body: Record<string, any> = {
       model,
       messages,
@@ -422,16 +434,32 @@ export class OpenAIApiAdapter implements ApiAdapter {
     body[usesMaxCompletion ? 'max_completion_tokens' : 'max_tokens'] = 3000;
 
     
-    
     if (!usesMaxCompletion) {
       body.temperature = 0.1;
     }
 
     
-    if (usesMaxCompletion) {
+    if (isOReasoningFamily) {
       body.reasoning = { effort: 'low' };
     }
 
+    return body;
+  }
+
+  private buildResponsesBody(model: string, messages: any[]) {
+    
+    const transcript = messages
+      .map((m: any) => `${m.role}: ${m.content}`)
+      .join('\n\n');
+
+    const body: Record<string, any> = {
+      model,
+      input: transcript,
+      stream: true,
+      reasoning: { effort: 'minimal' },
+      
+      max_output_tokens: 3000
+    };
     return body;
   }
 
@@ -500,6 +528,58 @@ export class OpenAIApiAdapter implements ApiAdapter {
           }
         } catch (error) {
           controller.error(error);
+        }
+      }
+    });
+  }
+
+  private transformResponsesStream(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+    const textDecoder = new TextDecoder();
+    const textEncoder = new TextEncoder();
+    
+    return new ReadableStream({
+      async start(controller) {
+        const reader = body.getReader();
+        let buffer = '';
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              controller.close();
+              break;
+            }
+            buffer += textDecoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.trim().startsWith('data:')) continue;
+              const jsonStr = line.replace(/^data:\s*/, '').trim();
+              if (!jsonStr) continue;
+              if (jsonStr === '[DONE]') {
+                controller.enqueue(textEncoder.encode('data: [DONE]\n'));
+                continue;
+              }
+              try {
+                const event = JSON.parse(jsonStr);
+                if (event?.error) {
+                  controller.error(new Error(event.error?.message || 'Error during streaming'));
+                  return;
+                }
+                
+                if (event.type === 'response.output_text.delta' && typeof event.delta === 'string') {
+                  const bridged = { choices: [{ delta: { content: event.delta } }] };
+                  controller.enqueue(textEncoder.encode(`data: ${JSON.stringify(bridged)}\n`));
+                } else if (event.type === 'response.completed') {
+                  controller.enqueue(textEncoder.encode('data: [DONE]\n'));
+                }
+              } catch {
+                
+                controller.enqueue(textEncoder.encode(`${line}\n`));
+              }
+            }
+          }
+        } catch (err) {
+          controller.error(err as any);
         }
       }
     });
