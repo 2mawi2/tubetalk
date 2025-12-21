@@ -218,8 +218,8 @@ const injectPlayerButton = () => {
 
   // Insert the icon SVG
   button.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: center; transform: translateY(-12px);">
-      <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="24" height="24" rx="4.5" fill="white"/>
         <path d="M16.5 12L10 15.8971V8.10289L16.5 12Z" fill="#3B82F6"/>
       </svg>
